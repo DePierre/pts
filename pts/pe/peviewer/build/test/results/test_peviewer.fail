@@ -1,0 +1,19 @@
+---
+:source:
+  :path: test
+  :file: test_peviewer.c
+:successes:
+- :test: test_getDosHeader
+  :line: 20
+  :message: ''
+:failures:
+- :test: test_is_pe
+  :line: 17
+  :message: Expected 1 Was 0
+:ignores: []
+:counts:
+  :total: 2
+  :passed: 1
+  :failed: 1
+  :ignored: 0
+:stdout: []
