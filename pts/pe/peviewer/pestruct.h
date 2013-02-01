@@ -120,7 +120,6 @@ typedef struct _IMAGE_OPTIONAL_HEADER64 {
     unsigned short MinorSubsystemVersion;
     unsigned long Win32VersionValue;
     unsigned long SizeOfImage;
-    unsigned long SizeOfImage;
     unsigned long SizeOfHeaders;
     unsigned long CheckSum;
     unsigned short Subsystem;
@@ -131,8 +130,8 @@ typedef struct _IMAGE_OPTIONAL_HEADER64 {
     unsigned long long SizeOfHeapCommit;
     unsigned long LoaderFlags;
     unsigned long NumberOfRvaAndSizes;
-    IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIE];
-} IMAGE_OPTIONAL_HEADER64; *PIMAGE_OPTIONAL_HEADER64;
+    IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+} IMAGE_OPTIONAL_HEADER64, *PIMAGE_OPTIONAL_HEADER64;
 
 typedef struct _IMAGE_NT_HEADERS {
     unsigned long Signature;
@@ -140,11 +139,11 @@ typedef struct _IMAGE_NT_HEADERS {
     IMAGE_OPTIONAL_HEADER OptionalHeader;
 } IMAGE_NT_HEADERS, *PIMAGE_NT_HEADERS;
 
-typedef struct _IMAGE_NT_HEADER64 {
+typedef struct _IMAGE_NT_HEADERS64 {
     unsigned long Signature;
     IMAGE_FILE_HEADER FileHeader;
-    IMAGE_OPTIONAL_HEADER_64 OptionalHeader;
-} IMAGE_NT_HEADER64, *PIMAGE_NT_HEADERS64;
+    IMAGE_OPTIONAL_HEADER64 OptionalHeader;
+} IMAGE_NT_HEADERS64, *PIMAGE_NT_HEADERS64;
 
 #define IMAGE_SIZEOF_SHORT_NAME 8
 
