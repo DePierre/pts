@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <pestruct.h>
 #include <peviewer.h>
@@ -10,7 +11,7 @@
 int is_pe(const char *filename)
 {
     FILE *pe_file = NULL;
-    unsigned int signature = 0;
+    uint32_t signature= 0;
     int res = 0;
     PIMAGE_DOS_HEADER dos_header = NULL;
 
@@ -34,7 +35,7 @@ int is_pe(const char *filename)
     }
     fseek(pe_file, dos_header->e_lfanew, SEEK_SET);
     /* Check the signature number of the file */
-    fgets((void *)&signature, sizeof(unsigned int), pe_file);
+    fgets((void *)&signature, sizeof(uint32_t), pe_file);
     res = (signature == IMAGE_NT_SIGNATURE) ? 1 : 0;
 
     free(dos_header);
