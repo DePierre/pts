@@ -31,6 +31,11 @@
 #define IMAGE_NT_SIGNATURE 0x00004550 /* PE00 */
 #define IMAGE_NUMBEROF_DIRECTORY_ENTRIES 16
 
+/* These are the value of Magic from Optional header to know if it's wether 32
+ * bits or 64 bits application */
+#define IMAGE_NT_OPTIONAL_HDR32_MAGIC 0x10B
+#define IMAGE_NT_OPTIONAL_HDR64_MAGIC 0x20B
+
 typedef struct _IMAGE_DOS_HEADER {
     uint16_t e_magic;      /* 00: MZ Header signature */
     uint16_t e_cblp;       /* 02: Bytes on last page of file */
@@ -68,7 +73,7 @@ typedef struct _IMAGE_FILE_HEADER {
     uint16_t Characteristics;
 } IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;
 
-typedef struct _IMAGE_OPTIONAL_HEADER {
+typedef struct _IMAGE_OPTIONAL_HEADER32 {
     uint16_t Magic;
     unsigned char MajorLinkerVersion;
     unsigned char MinorLinkerVersion;
@@ -93,14 +98,14 @@ typedef struct _IMAGE_OPTIONAL_HEADER {
     uint32_t CheckSum;
     uint16_t Subsystem;
     uint16_t DllCharacteristics;
-    uint16_t SizeOfStackReserve;
-    uint16_t SizeOfStackCommit;
-    uint16_t SizeOfHeapReserve;
-    uint16_t SizeOfHeapCommit;
-    uint16_t LoaderFlags;
-    uint16_t NumberOfRvaAndSizes;
+    uint32_t SizeOfStackReserve;
+    uint32_t SizeOfStackCommit;
+    uint32_t SizeOfHeapReserve;
+    uint32_t SizeOfHeapCommit;
+    uint32_t LoaderFlags;
+    uint32_t NumberOfRvaAndSizes;
     IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
-} IMAGE_OPTIONAL_HEADER, *PIMAGE_OPTIONAL_HEADER;
+} IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
 
 typedef struct _IMAGE_OPTIONAL_HEADER64 {
     uint16_t Magic;
@@ -112,7 +117,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER64 {
     uint32_t AddressOfEntryPoint;
     uint32_t BaseOfCode;
     uint64_t ImageBase;
-    uint64_t SectionAlignment;
+    uint32_t SectionAlignment;
     uint32_t FileAlignment;
     uint16_t MajorOperationgSystemVersion;
     uint16_t MinorOperatingSystemVersion;
@@ -135,11 +140,11 @@ typedef struct _IMAGE_OPTIONAL_HEADER64 {
     IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
 } IMAGE_OPTIONAL_HEADER64, *PIMAGE_OPTIONAL_HEADER64;
 
-typedef struct _IMAGE_NT_HEADERS {
+typedef struct _IMAGE_NT_HEADERS32 {
     uint32_t Signature;
     IMAGE_FILE_HEADER FileHeader;
-    IMAGE_OPTIONAL_HEADER OptionalHeader;
-} IMAGE_NT_HEADERS, *PIMAGE_NT_HEADERS;
+    IMAGE_OPTIONAL_HEADER32 OptionalHeader;
+} IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;
 
 typedef struct _IMAGE_NT_HEADERS64 {
     uint32_t Signature;
