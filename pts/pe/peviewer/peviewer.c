@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <pestruct.h>
 #include <peviewer.h>
 
@@ -15,7 +16,7 @@ int is_pe(const char *filename)
 
     pe_file = fopen(filename, "rb");
 
-    /* Check if the file has been correctly opened */
+    /* Check if the file has been correcly opened */
     if (pe_file == NULL)
     {
         printf("error: cannot open the file\n");
@@ -39,4 +40,52 @@ int is_pe(const char *filename)
     free(dos_header);
     fclose(pe_file);
     return res;
+}
+
+/*! \arg \c filename name of the PE file
+ *  \arg \c dest destination to write the dos header
+ */
+void get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
+{
+    FILE *pe_file = NULL;
+
+    pe_file = fopen(filename, "rb");
+    /* Read the image dos header of the file */
+    fgets((void *)dest, sizeof(IMAGE_DOS_HEADER), pe_file);
+
+    fclose(pe_file);
+}
+
+/*! \arg \c filename name of the PE file
+ *  \arg \c dest destination to write the pe header
+ */
+void get_pe_header(const char *filename, PIMAGE_NT_HEADERS dest)
+{
+    FILE *pe_file = NULL;
+    PIMAGE_DOS_HEADER dos_header = NULL;
+
+    dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
+    get_dos_header(filename, dos_header);
+    pe_file = fopen(filename, "rb");
+    /* Move the cursor to the beginning of IMAGE_NT_HEADERS */
+    fseek(pe_file, dos_header->e_lfanew, SEEK_SET);
+    fgets((void *)dest, sizeof(IMAGE_NT_HEADERS), pe_file);
+
+    free(dos_header);
+    fclose(pe_file);
+}
+
+/*! \arg \c filename name of the PE file
+ *  \arg \c dest destination to write the coff header
+ */
+void get_coff_header(const char *filename, PIMAGE_FILE_HEADER dest)
+{
+    PIMAGE_NT_HEADERS pe_header = NULL;
+
+    pe_header = (PIMAGE_NT_HEADERS)calloc(1, sizeof(IMAGE_NT_HEADERS));
+    get_pe_header(filename, pe_header);
+    /* IMAGE_NT_HEADERS contains the coff header so we just have to copy it into the dest */
+    memcpy(dest, &pe_header->FileHeader, sizeof(IMAGE_FILE_HEADER));
+
+    free(pe_header);
 }
