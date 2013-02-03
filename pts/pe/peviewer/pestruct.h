@@ -31,6 +31,8 @@
 #define IMAGE_NT_SIGNATURE 0x00004550 /* PE00 */
 #define IMAGE_NUMBEROF_DIRECTORY_ENTRIES 16
 
+/* Max length of the section name */
+#define IMAGE_SIZEOF_SHORT_NAME 8
 /* These are the value of Magic from Optional header to know if it's wether 32
  * bits or 64 bits application */
 #define IMAGE_NT_OPTIONAL_HDR32_MAGIC 0x10B
