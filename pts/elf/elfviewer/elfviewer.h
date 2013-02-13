@@ -1,7 +1,8 @@
-#ifndef elfviewer_H
-#define elfviewer_H
+#ifndef ELFVIEWER_H
+#define ELFVIEWER_H
+
 #include <stdio.h>
- char *getMachine(FILE *elfFile);
 
+int is_elf(const char *filename);
 
-#endif // elfviewer_H
+#endif /* ELFVIEWER_H */
