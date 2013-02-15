@@ -44,15 +44,15 @@ int is_pe(const char *filename)
 }
 
 /*! \arg \c filename name of the PE file
- * \returns ARCH32 if it's a 32bits application
- * \returns ARCH64 if it's a 64bits application
- * \returns -1 if unknown
+ * \returns PECLASS32 (1) if it's a 32bits application
+ * \returns PECLASS64 (2) if it's a 64bits application
+ * \returns PECLASSNONE (0) otherwise
  */
-int get_architecture(const char *filename)
+int get_arch_pe(const char *filename)
 {
     FILE *pe_file = NULL;
     PIMAGE_DOS_HEADER dos_header = NULL;
-    int res = -1;
+    int res = PECLASSNONE;
     uint16_t architecture = 0;
 
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
@@ -63,9 +63,9 @@ int get_architecture(const char *filename)
     /* Read the first field of the COFF header */
     fread((void *)&architecture, sizeof(uint16_t), 1, pe_file);
     if (architecture == IMAGE_NT_OPTIONAL_HDR32_MAGIC)
-        res = ARCH32;
+        res = PECLASS32;
     else if (architecture == IMAGE_NT_OPTIONAL_HDR64_MAGIC)
-        res = ARCH64;
+        res = PECLASS64;
 
     free(dos_header);
     fclose(pe_file);

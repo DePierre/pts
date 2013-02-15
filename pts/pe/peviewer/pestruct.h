@@ -38,6 +38,11 @@
 #define IMAGE_NT_OPTIONAL_HDR32_MAGIC 0x10B
 #define IMAGE_NT_OPTIONAL_HDR64_MAGIC 0x20B
 
+/* PE classes */
+#define PECLASSNONE 0   /* Invalid class */
+#define PECLASS32 1     /* 32-bit objects */
+#define PECLASS64 2     /* 64-bit objects */
+
 typedef struct _IMAGE_DOS_HEADER {
     uint16_t e_magic;      /* 00: MZ Header signature */
     uint16_t e_cblp;       /* 02: Bytes on last page of file */

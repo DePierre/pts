@@ -5,6 +5,30 @@
 
 #define EI_NIDENT 16
 
+/* Initial bytes of ELF header */
+#define EI_MAG0 0       /* File identification */
+#define EI_MAG1 1       /* File identification */
+#define EI_MAG2 2       /* File identification */
+#define EI_MAG3 3       /* File identification */
+#define EI_CLASS 4      /* File class */
+#define EI_DATA 5       /* Data encoding */
+#define EI_VERSION 6    /* File version */
+#define EI_OSABI 7      /* Operating system/ABI identification */
+#define EI_ABIVERSION 8 /* ABI version */
+#define EI_PAD 9        /* Start of padding bytes */
+#define EI_NIDENT 10    /* Size of d_ident[] */
+
+/* ELF signature */
+#define ELFMAG0 0x7F
+#define ELFMAG1 'E'
+#define ELFMAG2 'L'
+#define ELFMAG3 'F'
+
+/* ELF classes */
+#define ELFCLASSNONE 0   /* Invalid class */
+#define ELFCLASS32 1     /* 32-bit objects */
+#define ELFCLASS64 2     /* 64-bit objects */
+
 /* ELF header */
 
 typedef struct _Elf32_Ehdr {
