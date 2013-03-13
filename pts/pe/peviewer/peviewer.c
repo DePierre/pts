@@ -24,15 +24,17 @@ int is_pe(const char *filename)
         exit(-1);
     }
 
+    fclose(pe_file);
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
     /* Read the image dos header of the file */
-    fread((void *)dos_header, sizeof(IMAGE_DOS_HEADER), 1, pe_file);
+    get_dos_header(filename, dos_header);
     /* Check the magic number of the file */
     if (dos_header->e_magic != IMAGE_DOS_SIGNATURE)
     {
         printf("error: not a valid PE file\n");
         exit(-1);
     }
+    pe_file = open(filename, "rb");
     fseek(pe_file, dos_header->e_lfanew, SEEK_SET);
     /* Check the signature number of the file */
     fread((void *)&signature, sizeof(uint32_t), 1, pe_file);
