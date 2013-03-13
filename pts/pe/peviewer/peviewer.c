@@ -56,7 +56,11 @@ int get_arch_pe(const char *filename)
     uint16_t architecture = 0;
 
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
-    get_dos_header(filename, dos_header);
+    if (!get_dos_header(filename, dos_header))
+    {
+        printf("error: not a valid pe\n");
+        exit(-1);
+    }
     pe_file = fopen(filename, "rb");
     /* Move the cursor to the field Magic of the Optional header */
     fseek(pe_file, dos_header->e_lfanew + sizeof(uint32_t) + sizeof(IMAGE_FILE_HEADER), SEEK_SET);
