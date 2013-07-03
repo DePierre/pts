@@ -114,12 +114,12 @@ int get_section_by_name64(const char *filename, const char *name, PIMAGE_SECTION
                      sizeof(IMAGE_FILE_HEADER) + \
                      coff_header->SizeOfOptionalHeader;
 
-    if (cmp_section_by_name(filename, \
-                current_offset, \
-                name, \
-                coff_header->NumberOfSections, \
-                section_header))
-    {
+    if (cmp_section_by_name(
+            filename,
+            current_offset,
+            name,
+            coff_header->NumberOfSections,
+            section_header)) {
         memcpy(dest, section_header, sizeof(IMAGE_SECTION_HEADER));
         res = 1;
     }
