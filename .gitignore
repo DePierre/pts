@@ -8,3 +8,6 @@
 *.o
 *.so
 *.out
+
+# tests directory
+pts/tests/

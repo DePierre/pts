@@ -1,11 +1,11 @@
 SRC = $(wildcard *.c)
 OBJ = $(SRC:.c=.o)
 
-INCLUDES = -I.
+INCLUDES = -I. -I../peviewer/ -I../../loader/
 
-all: libPEViewer.so
+all: libPEPacker.so
 
-libPEViewer.so: $(OBJ)
+libPEPacker.so: $(OBJ)
 	$(CC) -o $@ $^ -shared -fPIC $(CCFLAGS)
 
 %.o: %.c

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <peloader.h>
 
@@ -9,7 +10,7 @@
  * \return 0 if it failed
  * \return 1 if it succeed
  */
-int init_loader(Loader loader, const char *payload, const unsigned int oep) {
+int init_loader(Loader loader, const int *payload, const unsigned int oep) {
     if (loader == NULL) {
         printf("Error: loader structure is NULL\n");
         return 0;
@@ -20,7 +21,7 @@ int init_loader(Loader loader, const char *payload, const unsigned int oep) {
         printf("Error: cannot allocate memory for payload\n");
         return 0;
     }
-    memcpy(loader->payload, payload, sizeof(payload));
+    memcpy(loader->payload, &payload, sizeof(payload));
     loader->size = (unsigned int)sizeof(loader->payload);
 
     if (!oep) {
