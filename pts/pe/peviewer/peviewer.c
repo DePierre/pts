@@ -155,7 +155,7 @@ uint32_t get_free_space_section(PIMAGE_SECTION_HEADER src, uint32_t *virtual_off
         return 0;
     }
     /* Compute the offset where the free space starts */
-    virtual_offset = (uint32_t)(src->VirtualAddress + src->SizeOfRawData);
+    *virtual_offset = (uint32_t)(src->VirtualAddress + src->SizeOfRawData);
     return free_space;
 }
 
@@ -178,6 +178,6 @@ uint32_t get_raw_free_space_section(PIMAGE_SECTION_HEADER src, uint32_t *raw_off
         return 0;
     }
     /* Compute the offset where the free space starts */
-    raw_offset = (uint32_t)(src->Misc.PhysicalAddress + src->SizeOfRawData);
+    *raw_offset = (uint32_t)(src->Misc.PhysicalAddress + src->SizeOfRawData);
     return free_space;
 }
