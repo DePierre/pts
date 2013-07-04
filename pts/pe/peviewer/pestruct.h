@@ -38,6 +38,12 @@
 #define IMAGE_NT_OPTIONAL_HDR32_MAGIC 0x10B
 #define IMAGE_NT_OPTIONAL_HDR64_MAGIC 0x20B
 
+/* Section characteristics */
+#define IMAGE_SCN_CNT_CODE 0x00000020     /* The section contains executable code */
+#define IMAGE_SCN_MEM_EXECUTE 0x20000000  /* The section can be executed as code */
+#define IMAGE_SCN_MEM_READ 0x40000000     /* The section can be read */
+#define IMAGE_SCN_MEM_WRITE 0x80000000    /* The section can be written to */
+
 /* PE classes */
 #define PECLASSNONE 0   /* Invalid class */
 #define PECLASS32 1     /* 32-bit objects */
