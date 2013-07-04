@@ -128,3 +128,61 @@ int cmp_section_by_name(const char *filename, uint32_t offset, const char *name,
     fclose(pe_file);
     return res;
 }
+
+/*! \arg \c value the value to be aligned
+ * \arg \c alignment the alignment
+ * \returns value aligned
+ */
+uint32_t get_alignment(uint32_t value, uint32_t alignment)
+{
+    if (!(value % alignment))
+        return value;
+    else
+        return ((value / alignment) + 1) * alignment;
+}
+
+/*! \arg \c src the section where to compute the free space
+ * \arg \c virtual_offset offset of the virtual address where free space starts
+ * \returns free_space free space available
+ */
+uint32_t get_free_space_section(PIMAGE_SECTION_HEADER src, uint32_t *virtual_offset)
+{
+    int32_t free_space = 0;
+    if (src == NULL) {
+        virtual_offset = NULL;
+        return 0;
+    }
+
+    /* Compute the free space available */
+    free_space = (int32_t)(src->Misc.VirtualSize - src->SizeOfRawData);
+    if (free_space <= 0) {
+        virtual_offset = NULL;
+        return 0;
+    }
+    /* Compute the offset where the free space starts */
+    virtual_offset = (uint32_t)(src->VirtualAddress + src->SizeOfRawData);
+    return free_space;
+}
+
+/*! \arg \c src the section where to compute the free space
+ * \arg \c raw_offset offset of the raw address where free space starts
+ * \returns free_space free space available
+ */
+uint32_t get_raw_free_space_section(PIMAGE_SECTION_HEADER src, uint32_t *raw_offset)
+{
+    int32_t free_space = 0;
+    if (src == NULL) {
+        raw_offset = NULL;
+        return 0;
+    }
+
+    /* Compute the free space available */
+    free_space = (int32_t)(src->Misc.VirtualSize - src->SizeOfRawData);
+    if (free_space <= 0) {
+        raw_offset = NULL;
+        return 0;
+    }
+    /* Compute the offset where the free space starts */
+    raw_offset = (uint32_t)(src->Misc.PhysicalAddress + src->SizeOfRawData);
+    return free_space;
+}
