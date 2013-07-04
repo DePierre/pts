@@ -62,7 +62,7 @@ typedef struct _IMAGE_DOS_HEADER {
     uint16_t e_oemid;      /* 24: OEM identifier (for e_oeminfo) */
     uint16_t e_oeminfo;    /* 26: OEM information; e_oemid specific */
     uint16_t e_res2[10];   /* 28: Reserved words */
-    uint32_t e_lfanew;      /* 3c: Offset to extended header */
+    uint32_t e_lfanew;     /* 3c: Offset to extended header */
 } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
 
 typedef struct _IMAGE_DATA_DIRECTORY {

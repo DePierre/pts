@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <pestruct.h>
+
 #include <peviewer.h>
 
 /*! \arg \c filename name of the PE file
@@ -18,9 +18,8 @@ int is_pe(const char *filename)
     pe_file = fopen(filename, "rb");
 
     /* Check if the file has been correcly opened */
-    if (pe_file == NULL)
-    {
-        printf("error: cannot open the file\n");
+    if (pe_file == NULL) {
+        printf("Error: cannot open the file %s\n", filename);
         exit(-1);
     }
 
@@ -30,11 +29,9 @@ int is_pe(const char *filename)
     get_dos_header(filename, dos_header);
     /* Check the magic number of the file */
     if (dos_header->e_magic != IMAGE_DOS_SIGNATURE)
-    {
-        printf("error: not a valid PE file\n");
-        exit(-1);
-    }
-    pe_file = open(filename, "rb");
+        return 0;
+
+    pe_file = fopen(filename, "rb");
     fseek(pe_file, dos_header->e_lfanew, SEEK_SET);
     /* Check the signature number of the file */
     fread((void *)&signature, sizeof(uint32_t), 1, pe_file);
@@ -111,15 +108,13 @@ int cmp_section_by_name(const char *filename, uint32_t offset, const char *name,
     fread((void *)section_header, sizeof(IMAGE_SECTION_HEADER), 1, pe_file);
 
     /* We read every section name to find the one */
-    while (strcmp(name, (char *)section_header->Name) && i < nb_sections)
-    {
+    while (strcmp(name, (char *)section_header->Name) && i < nb_sections) {
         fread((void *)section_header, sizeof(IMAGE_SECTION_HEADER), 1, pe_file);
         i = i + 1;
     }
 
     /* If the last section we have read is the one, we copy it into the dest */
-    if (!strcmp(name, (char *)section_header->Name))
-    {
+    if (!strcmp(name, (char *)section_header->Name)) {
         memcpy(dest, section_header, sizeof(IMAGE_SECTION_HEADER));
         res = 1;
     }

@@ -1,6 +1,8 @@
 #ifndef PEVIEWER_H
 #define PEVIEWER_H
 
+#include <pestruct.h>
+
 int is_pe(const char *filename);
 int get_arch_pe(const char *filename);
 
