@@ -106,7 +106,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER32 {
     uint16_t MajorSubsystemVersion;
     uint16_t MinorSubsystemVersion;
     uint32_t Win32VersionValue;
-    uint32_t SizeOfVersion;
+    uint32_t SizeOfImage;
     uint32_t SizeOfHeaders;
     uint32_t CheckSum;
     uint16_t Subsystem;
