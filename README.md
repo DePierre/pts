@@ -1,6 +1,9 @@
 Welcome to the repo of PTS!
 ===================================
 
+Fork from HackGyver
+-------------------
+
 
 > PTS is a C tool providing the ability of packing PE and ELF files.
 > It will compress and encrypt the target file.
@@ -32,9 +35,3 @@ and decompress the sections.
 
 
 > Enjoy!
-
-
-> TODO:
->    - pepacker
->    - complete elfviewer
->    - elfpacker
