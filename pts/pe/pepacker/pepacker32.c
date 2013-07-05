@@ -19,14 +19,14 @@ int add_section32(const char *filename, const Loader loader) {
     /* Allocate the new section for the binary */
     new_section = (PIMAGE_SECTION_HEADER)calloc(1, sizeof(IMAGE_SECTION_HEADER));
     if (new_section == NULL) {
-        printf("Error: cannot allocate memory for the new section\n");
+        perror("Error: cannot allocate memory for the new section");
         return 0;
     }
 
 
     optional_header = (PIMAGE_OPTIONAL_HEADER32)calloc(1, sizeof(IMAGE_OPTIONAL_HEADER32));
     if (optional_header == NULL) {
-        printf("Error: cannot allocate memory for the optional header\n");
+        perror("Error: cannot allocate memory for the optional header");
         free(new_section);
         return 0;
     }
@@ -36,7 +36,7 @@ int add_section32(const char *filename, const Loader loader) {
 
     last_section_header = (PIMAGE_SECTION_HEADER)calloc(1, sizeof(IMAGE_SECTION_HEADER));
     if (last_section_header == NULL) {
-        printf("Error: cannot allocate memory for the coff header\n");
+        perror("Error: cannot allocate memory for the coff header");
         free(new_section);
         free(optional_header);
         return 0;
@@ -49,10 +49,8 @@ int add_section32(const char *filename, const Loader loader) {
         last_section_header->VirtualAddress + last_section_header->Misc.VirtualSize,
         section_alignment
     );
-    new_section->Misc.VirtualSize = get_alignment(
-        section_size,
-        section_alignment
-    );
+    /* TODO: check if VirtualSize needs to be aligned */
+    new_section->Misc.VirtualSize = section_size;
     new_section->SizeOfRawData = get_alignment(
         section_size,
         file_alignment
@@ -72,13 +70,14 @@ int add_section32(const char *filename, const Loader loader) {
     /* Update the PE header */
     coff_header = (PIMAGE_FILE_HEADER)calloc(1, sizeof(IMAGE_FILE_HEADER));
     if (coff_header == NULL) {
-        printf("Error: cannot allocate memory for the coff header\n");
+        perror("Error: cannot allocate memory for the coff header");
         free(new_section);
         free(optional_header);
         free(last_section_header);
         return 0;
     }
     get_coff_header32(filename, coff_header);
+
     coff_header->NumberOfSections = coff_header->NumberOfSections + 0x1;
     optional_header->SizeOfImage = get_alignment(
         optional_header->SizeOfImage + section_size,
@@ -114,10 +113,10 @@ int save_section32(const char *filename, const PIMAGE_OPTIONAL_HEADER32 optional
     fseek(pe_file, dos_header->e_lfanew + sizeof(uint32_t), SEEK_SET);
     /* Write the new COFF header */
     written = fwrite((void *)coff_header, sizeof(IMAGE_FILE_HEADER), 1, pe_file);
-    printf("[+] COFF header has been saved (%d bytes)\n", written);
+    printf("[+] COFF header has been saved\n", written);
     /* Write the new Optional header */
     written = fwrite((void *)optional_header, sizeof(IMAGE_OPTIONAL_HEADER32), 1, pe_file);
-    printf("[+] Optional header has been saved (%d bytes)\n", written);
+    printf("[+] Optional header has been saved\n", written);
 
     /* Compute offset of the last section */
     offset_last_section = dos_header->e_lfanew + \
@@ -128,7 +127,7 @@ int save_section32(const char *filename, const PIMAGE_OPTIONAL_HEADER32 optional
     fseek(pe_file, offset_last_section, SEEK_SET);
     /* TODO: add the section without overwritting the file */
     written = fwrite((void *)new_section, sizeof(IMAGE_SECTION_HEADER), 1, pe_file);
-    printf("[+] New section header has been saved (%d bytes) (offset: %X)\n", written, offset_last_section);
+    printf("[+] New section header has been saved (offset: %X)\n", written, offset_last_section);
     printf("[*] Name of the section: %s\n", new_section->Name);
 
     free(dos_header);

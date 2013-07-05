@@ -16,22 +16,32 @@ int is_pe(const char *filename)
     PIMAGE_DOS_HEADER dos_header = NULL;
 
     pe_file = fopen(filename, "rb");
-
-    /* Check if the file has been correcly opened */
     if (pe_file == NULL) {
-        printf("Error: cannot open the file %s\n", filename);
-        exit(-1);
+        perror("Error: cannot open the file");
+        exit(1);
     }
 
     fclose(pe_file);
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
+    if (dos_header == NULL) {
+        perror("Error: cannot allocate memory for dos header");
+        exit(1);
+    }
     /* Read the image dos header of the file */
     get_dos_header(filename, dos_header);
+    if (dos_header == NULL) {
+        fputs("Cannot read DOS header", stderr);
+        exit(1);
+    }
     /* Check the magic number of the file */
     if (dos_header->e_magic != IMAGE_DOS_SIGNATURE)
         return 0;
 
     pe_file = fopen(filename, "rb");
+    if (pe_file == NULL) {
+        perror("Error: cannot open the file");
+        exit(1);
+    }
     fseek(pe_file, dos_header->e_lfanew, SEEK_SET);
     /* Check the signature number of the file */
     fread((void *)&signature, sizeof(uint32_t), 1, pe_file);
@@ -55,8 +65,20 @@ int get_arch_pe(const char *filename)
     uint16_t architecture = 0;
 
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
+    if (dos_header == NULL) {
+        perror("Error: cannot allocate memory for dos header");
+        exit(1);
+    }
     get_dos_header(filename, dos_header);
+    if (dos_header == NULL) {
+        fputs("Cannot read DOS header", stderr);
+        exit(1);
+    }
     pe_file = fopen(filename, "rb");
+    if (pe_file == NULL) {
+        perror("Error: cannot open the file");
+        exit(1);
+    }
     /* Move the cursor to the field Magic of the Optional header */
     fseek(pe_file, dos_header->e_lfanew + sizeof(uint32_t) + sizeof(IMAGE_FILE_HEADER), SEEK_SET);
     /* Read the first field of the COFF header */
@@ -79,6 +101,10 @@ void get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
     FILE *pe_file = NULL;
 
     pe_file = fopen(filename, "rb");
+    if (pe_file == NULL) {
+        perror("Error: cannot open the file");
+        exit(1);
+    }
     /* Read the image dos header of the file */
     fread((void *)dest, sizeof(IMAGE_DOS_HEADER), 1, pe_file);
 
@@ -101,8 +127,16 @@ int cmp_section_by_name(const char *filename, uint32_t offset, const char *name,
     uint16_t i = 0;
 
     section_header = (PIMAGE_SECTION_HEADER)calloc(1, sizeof(IMAGE_SECTION_HEADER));
+    if (section_header == NULL) {
+        perror("Error: cannot allocate memory for section header");
+        exit(1);
+    }
 
     pe_file = fopen(filename, "rb");
+    if (pe_file == NULL) {
+        perror("Error: cannot open the file");
+        exit(1);
+    }
     fseek(pe_file, offset, SEEK_CUR);
     /* We read the first section */
     fread((void *)section_header, sizeof(IMAGE_SECTION_HEADER), 1, pe_file);

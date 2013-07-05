@@ -13,7 +13,7 @@ int add_section(const char *filename, Loader loader) {
             add_section32(filename, loader);
             break;
         default:
-            printf("Error: unknow architecture\n");
+            fputs("Error: unknow architecture", stderr);
             return 0;
     }
 

@@ -9,5 +9,8 @@
 *.so
 *.out
 
+# Backup files
+*.swp
+
 # tests directory
 pts/tests/
