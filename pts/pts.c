@@ -23,11 +23,13 @@ int main(int argc, char *argv[]) {
 
     loader = (Loader)calloc(1, sizeof(Struct_Loader));
     if (loader == NULL) {
-        printf("Error: cannot allocate memory for the loader\n");
+        perror("Error: cannot allocate memory for loader");
         exit(1);
     }
-    init_loader(loader, x86_32_jump_far, 0x1);
+
+    init_loader(loader, x86_32_jump_far, 1);
     add_section(argv[1], loader);
+    write_loader(argv[1], loader);
 
     return 0;
 }

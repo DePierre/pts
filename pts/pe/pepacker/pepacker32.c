@@ -4,10 +4,12 @@
 #include <string.h>
 
 #include <pepacker32.h>
+#include <pepacker.h>
+#include <pestruct.h>
 #include <peviewer.h>
 #include <peviewer32.h>
 
-int add_section32(const char *filename, const Loader loader) {
+int add_section32(const char *filename, Loader loader) {
     PIMAGE_SECTION_HEADER new_section = NULL;
     PIMAGE_OPTIONAL_HEADER32 optional_header = NULL;
     PIMAGE_FILE_HEADER coff_header = NULL;
@@ -49,6 +51,8 @@ int add_section32(const char *filename, const Loader loader) {
         last_section_header->VirtualAddress + last_section_header->Misc.VirtualSize,
         section_alignment
     );
+    /* Update the payload */
+    memcpy(&loader->payload[loader->offset_oep], &new_section->VirtualAddress, sizeof(uint32_t));
     /* TODO: check if VirtualSize needs to be aligned */
     new_section->Misc.VirtualSize = section_size;
     new_section->SizeOfRawData = get_alignment(
@@ -103,20 +107,31 @@ int save_section32(const char *filename, const PIMAGE_OPTIONAL_HEADER32 optional
     FILE *pe_file = NULL;
     PIMAGE_DOS_HEADER dos_header = NULL;
     uint32_t offset_last_section = 0;
-    size_t written = 0;
 
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
+    if (dos_header == NULL) {
+        perror("Error: cannot allocate memory for dos header");
+        return 0;
+    }
     get_dos_header(filename, dos_header);
+    if (dos_header == NULL) {
+        fputs("Cannot read DOS header", stderr);
+        return 0;
+    }
 
     pe_file = fopen(filename, "rb+");
+    if (pe_file == NULL) {
+        perror("Error: cannot open the file");
+        return 0;
+    }
     /* Move the cursor to the IMAGE_FILE_HEADER32 */
     fseek(pe_file, dos_header->e_lfanew + sizeof(uint32_t), SEEK_SET);
     /* Write the new COFF header */
-    written = fwrite((void *)coff_header, sizeof(IMAGE_FILE_HEADER), 1, pe_file);
-    printf("[+] COFF header has been saved\n", written);
+    fwrite((void *)coff_header, sizeof(IMAGE_FILE_HEADER), 1, pe_file);
+    printf("[+] COFF header has been saved\n");
     /* Write the new Optional header */
-    written = fwrite((void *)optional_header, sizeof(IMAGE_OPTIONAL_HEADER32), 1, pe_file);
-    printf("[+] Optional header has been saved\n", written);
+    fwrite((void *)optional_header, sizeof(IMAGE_OPTIONAL_HEADER32), 1, pe_file);
+    printf("[+] Optional header has been saved\n");
 
     /* Compute offset of the last section */
     offset_last_section = dos_header->e_lfanew + \
@@ -126,12 +141,52 @@ int save_section32(const char *filename, const PIMAGE_OPTIONAL_HEADER32 optional
                           (coff_header->NumberOfSections - 1) * sizeof(IMAGE_SECTION_HEADER);
     fseek(pe_file, offset_last_section, SEEK_SET);
     /* TODO: add the section without overwritting the file */
-    written = fwrite((void *)new_section, sizeof(IMAGE_SECTION_HEADER), 1, pe_file);
-    printf("[+] New section header has been saved (offset: %X)\n", written, offset_last_section);
+    fwrite((void *)new_section, sizeof(IMAGE_SECTION_HEADER), 1, pe_file);
+    printf("[+] New section header has been saved (offset: %X)\n", offset_last_section);
     printf("[*] Name of the section: %s\n", new_section->Name);
 
     free(dos_header);
     fclose(pe_file);
 
+    redirect_ep(filename, new_section->VirtualAddress);
+
     return 1;
+}
+
+void write_loader32(const char *filename, Loader loader) {
+    PIMAGE_OPTIONAL_HEADER32 optional_header = NULL;
+    FILE *pe_file = NULL;
+    unsigned int filled = 0;
+    unsigned int i = 0;
+    const uint8_t null = 0x00;
+
+    pe_file = fopen(filename, "rb+");
+    if (pe_file == NULL) {
+        perror("Error: cannot open the file");
+        exit(1);
+    }
+
+    fseek(pe_file, 0, SEEK_END);
+    fwrite((void *)loader->payload, loader->size, 1, pe_file);
+
+    fclose(pe_file);
+    optional_header = (PIMAGE_OPTIONAL_HEADER32)calloc(1, sizeof(IMAGE_OPTIONAL_HEADER32));
+    if (optional_header == NULL) {
+        perror("Error: cannot allocate memory for optional header");
+        exit(1);
+    }
+    get_optional_header32(filename, optional_header);
+    if (optional_header == NULL) {
+        fputs("Cannot read optional header", stderr);
+        exit(1);
+    }
+
+    /* Fill the rest of the section */
+    filled = optional_header->FileAlignment - loader->size;
+    pe_file = fopen(filename, "rb+");
+    fseek(pe_file, 0, SEEK_END);
+    for (i = 0; i < filled; i = i + 1)
+        fwrite(&null, sizeof(null), 1, pe_file);
+
+    fclose(pe_file);
 }

@@ -10,25 +10,21 @@
  * \return 0 if it failed
  * \return 1 if it succeed
  */
-int init_loader(Loader loader, const int *payload, const unsigned int oep) {
+int init_loader(Loader loader, const uint8_t *payload, const int offset_oep) {
     if (loader == NULL) {
-        printf("Error: loader structure is NULL\n");
+        fputs("Loader cannot be null", stderr);
         return 0;
     }
 
-    loader->payload = (char*)calloc(1, sizeof(payload));
+    loader->payload = (uint8_t *)calloc(1, sizeof(payload));
     if (loader->payload == NULL) {
-        printf("Error: cannot allocate memory for payload\n");
+        perror("Error: cannot allocate memory for payload");
         return 0;
     }
     memcpy(loader->payload, &payload, sizeof(payload));
     loader->size = (unsigned int)sizeof(loader->payload);
 
-    if (!oep) {
-        printf("Error: oep cannot be 0\n");
-        return -1;
-    }
-    loader->oep = (unsigned int)oep;
+    loader->offset_oep = offset_oep;
 
     return 1;
 }

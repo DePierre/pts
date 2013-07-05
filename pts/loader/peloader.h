@@ -1,15 +1,17 @@
 #ifndef PELOADER_H_INCLUDED
 #define PELOADER_H_INCLUDED
 
+#include <stdint.h>
+
 typedef struct {
     unsigned int size;
-    unsigned int oep;
+    int offset_oep;
 
-    char *payload;
+    uint8_t *payload;
 } Struct_Loader;
 
 typedef Struct_Loader* Loader;
 
-int init_loader(Loader loader, const int *payload, const unsigned int oep);
+int init_loader(Loader loader, const uint8_t *payload, const int offset_oep);
 
 #endif /* PELOADER_H_INCLUDED */
