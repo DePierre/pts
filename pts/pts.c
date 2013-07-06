@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    init_loader(loader, x86_32_jump_far, 1);
+    init_loader(loader, x86_32_jump_far, 7, 1);
     add_section(argv[1], loader);
     write_loader(argv[1], loader);
 

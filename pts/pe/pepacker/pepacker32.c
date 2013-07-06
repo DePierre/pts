@@ -14,9 +14,10 @@ int add_section32(const char *filename, Loader loader) {
     PIMAGE_OPTIONAL_HEADER32 optional_header = NULL;
     PIMAGE_FILE_HEADER coff_header = NULL;
     PIMAGE_SECTION_HEADER last_section_header = NULL;
-    const uint32_t section_size = loader->size + sizeof(uint32_t) + 1;
+    const uint32_t section_size = loader->length * sizeof(*loader->payload) + sizeof(uint32_t) + 1;
     uint32_t section_alignment = 0;
     uint32_t file_alignment = 0;
+    uint32_t new_ep = 0;
 
     /* Allocate the new section for the binary */
     new_section = (PIMAGE_SECTION_HEADER)calloc(1, sizeof(IMAGE_SECTION_HEADER));
@@ -51,8 +52,6 @@ int add_section32(const char *filename, Loader loader) {
         last_section_header->VirtualAddress + last_section_header->Misc.VirtualSize,
         section_alignment
     );
-    /* Update the payload */
-    memcpy(&loader->payload[loader->offset_oep], &new_section->VirtualAddress, sizeof(uint32_t));
     /* TODO: check if VirtualSize needs to be aligned */
     new_section->Misc.VirtualSize = section_size;
     new_section->SizeOfRawData = get_alignment(
@@ -91,6 +90,9 @@ int add_section32(const char *filename, Loader loader) {
         optional_header->SizeOfHeaders + sizeof(IMAGE_SECTION_HEADER),
         file_alignment
     );
+    /* Update the payload */
+    new_ep = optional_header->ImageBase + optional_header->AddressOfEntryPoint;
+    memcpy(&loader->payload[loader->offset_oep], &new_ep, sizeof(uint32_t));
 
     save_section32(filename, optional_header, coff_header, new_section);
 
@@ -167,7 +169,7 @@ void write_loader32(const char *filename, Loader loader) {
     }
 
     fseek(pe_file, 0, SEEK_END);
-    fwrite((void *)loader->payload, loader->size, 1, pe_file);
+    fwrite((void *)loader->payload, loader->length * sizeof(*loader->payload), 1, pe_file);
 
     fclose(pe_file);
     optional_header = (PIMAGE_OPTIONAL_HEADER32)calloc(1, sizeof(IMAGE_OPTIONAL_HEADER32));
@@ -182,7 +184,7 @@ void write_loader32(const char *filename, Loader loader) {
     }
 
     /* Fill the rest of the section */
-    filled = optional_header->FileAlignment - loader->size;
+    filled = optional_header->FileAlignment - loader->length * sizeof(*loader->payload);
     pe_file = fopen(filename, "rb+");
     fseek(pe_file, 0, SEEK_END);
     for (i = 0; i < filled; i = i + 1)
