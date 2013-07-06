@@ -2,28 +2,24 @@ export CC = gcc
 export CCFLAGS = -W -Wall -ansi -pedantic -Werror -m32
 
 TARGET = pts.out
-SRC = pts.c ./loader/peloader.c
-OBJ = $(SRC:.c=.o)
 
-LOADER_DIR = ./loader
+LOADER_DIR = ./loader/
 PEVIEWER_DIR = ./pe/peviewer/
-PEVIEWER_LIB = PEViewer
 PEPACKER_DIR = ./pe/pepacker/
 PEPACKER_LIB = PEPacker
 
 DIR = -I. -I$(LOADER_DIR) -I$(PEVIEWER_DIR) -I$(PEPACKER_DIR)
 
+SRC = $(wildcard *.c) $(wildcard $(LOADER_DIR)*.c) $(wildcard $(PEVIEWER_DIR)*.c) $(wildcard $(PEPACKER_DIR)*.c)
+OBJ = $(SRC:.c=.o)
+
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
-	cd $(PEVIEWER_DIR) && $(MAKE)
-	cd $(PEPACKER_DIR) && $(MAKE)
-	$(CC) $(CCFLAGS) -L$(PEVIEWER_DIR) -L$(PEPACKER_DIR) -l$(PEVIEWER_LIB) -l$(PEPACKER_LIB) -o $@ $^
+	$(CC) $(CCFLAGS) $(DIR) -o $@ $^
 
 %.o: %.c
-	$(CC) $(CCFLAGS) -I$(DIR) -o $@ -c $<
+	$(CC) $(CCFLAGS) $(DIR) -o $@ -c $<
 
 clean:
-	cd $(PEVIEWER_DIR) && $(MAKE) $@
-	cd $(PEPACKER_DIR) && $(MAKE) $@
-	rm -f *.o ./loader/*.o *.out
+	rm -f *.o $(LOADER_DIR)*.o $(PEVIEWER_DIR)*.o $(PEPACKER_DIR)*.o *.out
