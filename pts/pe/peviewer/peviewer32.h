@@ -1,12 +1,13 @@
 #ifndef PEVIEWER32_H
 #define PEVIEWER32_H
 
-void get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest);
-void get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest);
-void get_optional_header32(const char *filename, PIMAGE_OPTIONAL_HEADER32 dest);
-void get_first_section_header32(const char *filename, PIMAGE_SECTION_HEADER dest);
-void get_last_section_header32(const char *filename, PIMAGE_SECTION_HEADER dest);
+int  get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest);
+int  get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest);
+int  get_optional_header32(const char *filename, PIMAGE_OPTIONAL_HEADER32 dest);
 
-int get_section_by_name32(const char *filename, const char *name, PIMAGE_SECTION_HEADER dest);
+int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections_headers, const unsigned int nb_sections);
+
+int dump_pe32(const char *filename, PE32 *pe32);
+void delete_pe32(PE32 *pe32);
 
 #endif /* PEVIEWER32_H */

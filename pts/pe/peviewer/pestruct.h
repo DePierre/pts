@@ -183,4 +183,40 @@ typedef struct _IMAGE_SECTION_HEADER {
     uint32_t Characteristics;
 } IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;
 
+typedef struct {
+    const char *filename;
+
+    unsigned int offset_dos_header;
+    PIMAGE_DOS_HEADER dos_header;
+
+    unsigned int offset_pe_header;
+    PIMAGE_NT_HEADERS32 pe_header;
+    unsigned int offset_coff_header;
+    PIMAGE_FILE_HEADER coff_header;
+    unsigned int offset_optional_header;
+    PIMAGE_OPTIONAL_HEADER32 optional_header;
+
+    unsigned int offset_first_section_header;
+    unsigned int number_of_sections;
+    PIMAGE_SECTION_HEADER *sections_headers;
+} Struct_PE32, *PE32;
+
+typedef struct {
+    const char *filename;
+
+    unsigned int offset_dos_header;
+    PIMAGE_DOS_HEADER dos_header;
+
+    unsigned int offset_pe_header;
+    PIMAGE_NT_HEADERS64 pe_header;
+    unsigned int offset_coff_header;
+    PIMAGE_FILE_HEADER coff_header;
+    unsigned int offset_optional_header;
+    PIMAGE_OPTIONAL_HEADER64 optional_header;
+
+    unsigned int offset_first_section_header;
+    unsigned int number_of_sections;
+    PIMAGE_SECTION_HEADER *sections_headers;
+} Struct_PE64, *PE64;
+
 #endif /* PESTRUCT_H */
