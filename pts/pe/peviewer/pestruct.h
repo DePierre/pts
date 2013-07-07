@@ -88,8 +88,8 @@ typedef struct _IMAGE_FILE_HEADER {
 
 typedef struct _IMAGE_OPTIONAL_HEADER32 {
     uint16_t Magic;
-    unsigned char MajorLinkerVersion;
-    unsigned char MinorLinkerVersion;
+    uint8_t MajorLinkerVersion;
+    uint8_t MinorLinkerVersion;
     uint32_t SizeOfCode;
     uint32_t SizeOfInitializedData;
     uint32_t SizeOfUnitializedData;
@@ -122,8 +122,8 @@ typedef struct _IMAGE_OPTIONAL_HEADER32 {
 
 typedef struct _IMAGE_OPTIONAL_HEADER64 {
     uint16_t Magic;
-    unsigned char MajorLinkerVersion;
-    unsigned char MinorLinkerVersion;
+    uint8_t MajorLinkerVersion;
+    uint8_t MinorLinkerVersion;
     uint32_t SizeOfCode;
     uint32_t SizeOfInitializedData;
     uint32_t SizeOfUninitializedData;
@@ -168,7 +168,7 @@ typedef struct _IMAGE_NT_HEADERS64 {
 #define IMAGE_SIZEOF_SHORT_NAME 8
 
 typedef struct _IMAGE_SECTION_HEADER {
-    unsigned char Name[IMAGE_SIZEOF_SHORT_NAME];
+    uint8_t Name[IMAGE_SIZEOF_SHORT_NAME];
     union {
         uint32_t PhysicalAddress;
         uint32_t VirtualSize;
