@@ -245,7 +245,7 @@ int dump_pe32(const char *filename, PE32 *pe32) {
     }
     printf("[+] Dumping OPTIONAL header\n");
     (*pe32)->offset_optional_header = (*pe32)->offset_coff_header + sizeof(IMAGE_FILE_HEADER);
-    get_coff_header32(filename, (*pe32)->coff_header);
+    get_optional_header32(filename, (*pe32)->optional_header);
     printf("\tOffset 0x%X\n", (*pe32)->offset_optional_header);
     printf("\tSize %d\n", sizeof(IMAGE_OPTIONAL_HEADER32));
 

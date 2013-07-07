@@ -1,5 +1,5 @@
 export CC = gcc
-export CCFLAGS = -W -Wall -ansi -pedantic -Werror -m32
+export CCFLAGS = -W -Wall -ansi -pedantic -Werror -m32 -g
 
 TARGET = pts.out
 

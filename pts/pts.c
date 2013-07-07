@@ -2,12 +2,14 @@
 #include <stdio.h>
 
 #include <peviewer.h>
+#include <peviewer32.h>
 #include <payload.h>
 #include <peloader.h>
-#include <pepacker.h>
+#include <pepacker32.h>
 
 int main(int argc, char *argv[]) {
     Loader loader = NULL;
+    PE32 pe32 = NULL;
 
     printf("Hello world!\n");
 
@@ -21,6 +23,8 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    dump_pe32(argv[1], &pe32);
+
     loader = (Loader)calloc(1, sizeof(Struct_Loader));
     if (loader == NULL) {
         perror("Error: cannot allocate memory for loader");
@@ -28,8 +32,10 @@ int main(int argc, char *argv[]) {
     }
 
     init_loader(loader, x86_32_jump_far, 7, 1);
-    add_section(argv[1], loader);
-    write_loader(argv[1], loader);
+    add_section32(&pe32, loader);
+    write_loader32(pe32, loader);
 
+
+    delete_pe32(&pe32);
     return 0;
 }

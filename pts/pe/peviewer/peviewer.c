@@ -15,13 +15,6 @@ int is_pe(const char *filename)
     int res = 0;
     PIMAGE_DOS_HEADER dos_header = NULL;
 
-    pe_file = fopen(filename, "rb");
-    if (pe_file == NULL) {
-        perror("Error: cannot open the file");
-        exit(1);
-    }
-
-    fclose(pe_file);
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
     if (dos_header == NULL) {
         perror("Error: cannot allocate memory for dos header");
