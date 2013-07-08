@@ -4,9 +4,6 @@ TODO
 General
 -------
 
-* Generate a unique library (or even none)
-* Check another way to implement to avoid opening/closing file all the time
-
 Specific
 --------
 
@@ -15,9 +12,8 @@ Specific
         * Extend peviewer (Directories, Symbols, etc.)
         * Add print function to sum up the PE file
     2. PEPacker
-        * Check when writing the new section if there is space
-        * Add feature to write the loader code
-        * Redirect the Entry Point
+        * Extends the code to deal with 64bits architecture
+        * Add feature to write the loader at the end of the code section
 
 2. ELF
     * Everything
