@@ -292,3 +292,33 @@ void delete_pe32(PE32 *pe32) {
     free(*pe32);
 }
 
+/*! \arg \c pe32 dump of the PE file's headers
+ *  \return 0 if there is no free space for a new section header
+ *  \return 1 otherwise
+ */
+int check_free_sections_headers_space(const PE32 pe32) {
+    unsigned int offset_end_sections_headers = 0;
+    unsigned int offset_start_raw_code = 0;
+    unsigned int i = 0;
+
+    if (pe32 == NULL) {
+        fputs("PE32 structure cannot be NULL", stderr);
+        return 0;
+    }
+
+    /* Find the offset of the end of the current sections headers */
+    offset_end_sections_headers = pe32->offset_first_section_header + \
+                                  pe32->number_of_sections * sizeof(IMAGE_SECTION_HEADER);
+
+    /* Find the start address of the first code */
+    offset_start_raw_code = pe32->sections_headers[0]->Misc.PhysicalAddress;
+    for (i = 1; i < pe32->number_of_sections; i = i + 1)
+        if (pe32->sections_headers[i]->Misc.PhysicalAddress < offset_start_raw_code)
+            offset_start_raw_code = pe32->sections_headers[i]->Misc.PhysicalAddress;
+
+    /* If there is enough space for a new section header */
+    if (offset_start_raw_code - offset_end_sections_headers > sizeof(IMAGE_SECTION_HEADER))
+        return 1;
+
+    return 0;
+}

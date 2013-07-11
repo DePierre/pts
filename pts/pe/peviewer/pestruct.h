@@ -183,7 +183,7 @@ typedef struct _IMAGE_SECTION_HEADER {
     uint32_t Characteristics;
 } IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;
 
-typedef struct {
+typedef struct _Struct_PE32 {
     const char *filename;
 
     unsigned int offset_dos_header;
@@ -201,7 +201,7 @@ typedef struct {
     PIMAGE_SECTION_HEADER *sections_headers;
 } Struct_PE32, *PE32;
 
-typedef struct {
+typedef struct _Struct_PE64 {
     const char *filename;
 
     unsigned int offset_dos_header;

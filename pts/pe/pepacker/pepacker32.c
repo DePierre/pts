@@ -8,6 +8,11 @@
 #include <peviewer.h>
 #include <peviewer32.h>
 
+/*! \arg \c pe32 a pointer to the PE headers dump
+ *  \arg \c loader the loader to add
+ *  \return 0 if it fails
+ *  \return 1 otherwise
+ */
 int add_section32(PE32 *pe32, Loader loader) {
     PIMAGE_SECTION_HEADER new_section = NULL;
     PIMAGE_OPTIONAL_HEADER32 optional_header = NULL;
@@ -17,6 +22,11 @@ int add_section32(PE32 *pe32, Loader loader) {
     uint32_t section_alignment = 0;
     uint32_t file_alignment = 0;
     uint32_t new_ep = 0;
+
+    if (!check_free_sections_headers_space(*pe32)) {
+        fputs("Error: not enough space to add a new section", stderr);
+        return 0;
+    }
 
     /* Allocate the new section for the binary */
     new_section = (PIMAGE_SECTION_HEADER)calloc(1, sizeof(IMAGE_SECTION_HEADER));
