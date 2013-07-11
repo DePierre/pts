@@ -32,8 +32,7 @@ int main(int argc, char *argv[]) {
     }
 
     init_loader(loader, x86_32_jump_far, 7, 1);
-    add_section32(&pe32, loader);
-    write_loader32(pe32, loader);
+    pack32(&pe32, loader);
 
 
     delete_pe32(&pe32);

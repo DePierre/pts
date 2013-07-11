@@ -8,12 +8,76 @@
 #include <peviewer.h>
 #include <peviewer32.h>
 
+/* \arg \c pe32 dump of the PE file's header
+ * \arg \c loader the loader to add
+ * \return 0 if it fails
+ * \return 1 otherwise
+ */
+unsigned int pack32(PE32 *pe32, Loader loader) {
+    unsigned int free_space = 0;
+    unsigned int error = 0;
+
+    free_space = get_available_section_space(*pe32);
+    printf("[+] Packing method:\n");
+    if (free_space >= (loader->length * sizeof(*loader->payload))) {
+        printf("\tAppend payload to the code section\n");
+        error = append_loader32(pe32, loader);
+    }
+    else {
+        printf("\tAdd a new section for the payload\n");
+        error = add_section32(pe32, loader);
+        error = write_loader32(*pe32, loader);
+    }
+
+    return error;
+}
+
 /*! \arg \c pe32 a pointer to the PE headers dump
  *  \arg \c loader the loader to add
  *  \return 0 if it fails
  *  \return 1 otherwise
  */
-int add_section32(PE32 *pe32, Loader loader) {
+unsigned int append_loader32(PE32 *pe32, Loader loader) {
+    FILE *pe_file = NULL;
+    unsigned int offset_start_free_space = 0;
+    unsigned int id = 0;
+    uint32_t oep = 0;
+
+    id = get_code_section(*pe32);
+    offset_start_free_space = (*pe32)->sections_headers[id]->PointerToRawData + \
+                              (*pe32)->sections_headers[id]->Misc.VirtualSize;
+
+    /* Update payload */
+    oep = (*pe32)->optional_header->ImageBase + (*pe32)->optional_header->AddressOfEntryPoint;
+    memcpy(&loader->payload[loader->offset_oep], &oep, sizeof(uint32_t));
+
+    /* Update headers */
+    (*pe32)->optional_header->AddressOfEntryPoint = (*pe32)->sections_headers[id]->VirtualAddress + \
+                                                    (*pe32)->sections_headers[id]->Misc.VirtualSize;
+    (*pe32)->sections_headers[id]->Misc.VirtualSize = (*pe32)->sections_headers[id]->Misc.VirtualSize + \
+                                                     loader->length * sizeof(*loader->payload);
+
+    save_dump32(*pe32);
+
+    pe_file = fopen((*pe32)->filename, "rb+");
+    if (pe_file == NULL) {
+        perror("Error: Cannot open the file");
+        return 0;
+    }
+
+    fseek(pe_file, offset_start_free_space, SEEK_SET);
+    fwrite((void *)loader->payload, loader->length * sizeof(*loader->payload), 1, pe_file);
+
+    fclose(pe_file);
+    return 1;
+}
+
+/*! \arg \c pe32 a pointer to the PE headers dump
+ *  \arg \c loader the loader to add
+ *  \return 0 if it fails
+ *  \return 1 otherwise
+ */
+unsigned int add_section32(PE32 *pe32, Loader loader) {
     PIMAGE_SECTION_HEADER new_section = NULL;
     PIMAGE_OPTIONAL_HEADER32 optional_header = NULL;
     PIMAGE_FILE_HEADER coff_header = NULL;
@@ -21,7 +85,7 @@ int add_section32(PE32 *pe32, Loader loader) {
     const uint32_t section_size = loader->length * sizeof(*loader->payload) + sizeof(uint32_t) + 1;
     uint32_t section_alignment = 0;
     uint32_t file_alignment = 0;
-    uint32_t new_ep = 0;
+    uint32_t oep = 0;
 
     if (!check_free_sections_headers_space(*pe32)) {
         fputs("Error: not enough space to add a new section", stderr);
@@ -66,8 +130,8 @@ int add_section32(PE32 *pe32, Loader loader) {
     new_section->NumberOfLinenumbers = 0x0;
 
     /* Update the payload */
-    new_ep = (*pe32)->optional_header->ImageBase + (*pe32)->optional_header->AddressOfEntryPoint;
-    memcpy(&loader->payload[loader->offset_oep], &new_ep, sizeof(uint32_t));
+    oep = (*pe32)->optional_header->ImageBase + (*pe32)->optional_header->AddressOfEntryPoint;
+    memcpy(&loader->payload[loader->offset_oep], &oep, sizeof(uint32_t));
 
     /* Update the PE header */
     (*pe32)->number_of_sections = (*pe32)->number_of_sections + 1;
@@ -102,6 +166,7 @@ int add_section32(PE32 *pe32, Loader loader) {
         sizeof(IMAGE_SECTION_HEADER)
     );
 
+    save_dump32(*pe32);
     save_section32(*pe32);
 
     free(new_section);
@@ -112,8 +177,11 @@ int add_section32(PE32 *pe32, Loader loader) {
 }
 
 /*! Save the new headers into the file.
+ *  \arg \c pe32 dump of the PE file's header
+ *  \return 0 if it fails
+ *  \return 1 otherwise
  */
-int save_section32(const PE32 pe32) {
+unsigned int save_section32(const PE32 pe32) {
     FILE *pe_file = NULL;
     unsigned int offset_last_section = 0;
 
@@ -122,29 +190,26 @@ int save_section32(const PE32 pe32) {
         perror("Error: cannot open the file");
         return 0;
     }
-    /* Move the cursor to the IMAGE_FILE_HEADER32 */
-    fseek(pe_file, pe32->offset_coff_header, SEEK_SET);
-    /* Write the new COFF header */
-    fwrite((void *)pe32->coff_header, sizeof(IMAGE_FILE_HEADER), 1, pe_file);
-    printf("[+] COFF header has been saved\n");
-    /* Write the new Optional header */
-    fwrite((void *)pe32->optional_header, sizeof(IMAGE_OPTIONAL_HEADER32), 1, pe_file);
-    printf("[+] Optional header has been saved\n");
 
     /* Compute offset of the last section */
     offset_last_section = pe32->offset_first_section_header + (pe32->number_of_sections - 1) * sizeof(IMAGE_SECTION_HEADER);
     fseek(pe_file, offset_last_section, SEEK_SET);
     /* TODO: add the section without overwritting the file */
     fwrite((void *)pe32->sections_headers[pe32->number_of_sections - 1], sizeof(IMAGE_SECTION_HEADER), 1, pe_file);
-    printf("[+] New section header has been saved (offset: %X)\n", offset_last_section);
-    printf("[*] Name of the section: %s\n", pe32->sections_headers[pe32->number_of_sections - 1]->Name);
+    printf("[+] New section header has been saved (offset: 0x%X)\n", offset_last_section);
+    printf("\tName of the new section: %s\n", pe32->sections_headers[pe32->number_of_sections - 1]->Name);
 
     fclose(pe_file);
 
     return 1;
 }
 
-void write_loader32(const PE32 pe32, const Loader loader) {
+/*! \arg \c pe32 dump of the PE file's header
+ *  \arg \c loader the loader to save
+ *  \return 0 if it fails
+ *  \return 1 otherwise
+ */
+unsigned int write_loader32(const PE32 pe32, const Loader loader) {
     FILE *pe_file = NULL;
     unsigned int filled = 0;
     unsigned int i = 0;
@@ -153,11 +218,12 @@ void write_loader32(const PE32 pe32, const Loader loader) {
     pe_file = fopen(pe32->filename, "rb+");
     if (pe_file == NULL) {
         perror("Error: cannot open the file");
-        exit(1);
+        return 0;
     }
 
     fseek(pe_file, 0, SEEK_END);
     fwrite((void *)loader->payload, loader->length * sizeof(*loader->payload), 1, pe_file);
+    printf("[+] Save payload\n");
 
     /* Fill the rest of the section */
     filled = pe32->optional_header->FileAlignment - loader->length * sizeof(*loader->payload);
@@ -165,4 +231,46 @@ void write_loader32(const PE32 pe32, const Loader loader) {
         fwrite(&null, sizeof(null), 1, pe_file);
 
     fclose(pe_file);
+    return 1;
+}
+
+/*! \arg \c pe32 dump of the PE file's header
+ *  \return 0 if it fails
+ *  \return 1 otherwise
+ */
+unsigned int save_dump32(const PE32 pe32) {
+    FILE *pe_file = NULL;
+    unsigned int i = 0;
+
+    pe_file = fopen(pe32->filename, "rb+");
+    if (pe_file == NULL) {
+        perror("Error: cannot open the file");
+        return 0;
+    }
+
+    printf("[+] Save the new PE headers:\n");
+    fseek(pe_file, pe32->offset_dos_header, SEEK_SET);
+    fwrite((void *)pe32->dos_header, sizeof(IMAGE_DOS_HEADER), 1, pe_file);
+    printf("\tDOS header saved\n");
+
+    fseek(pe_file, pe32->offset_pe_header, SEEK_SET);
+    fwrite((void *)pe32->pe_header, sizeof(IMAGE_NT_HEADERS32), 1, pe_file);
+    printf("\tPE header saved\n");
+
+    fseek(pe_file, pe32->offset_coff_header, SEEK_SET);
+    fwrite((void *)pe32->coff_header, sizeof(IMAGE_FILE_HEADER), 1, pe_file);
+    printf("\tCOFF header saved\n");
+
+    fseek(pe_file, pe32->offset_optional_header, SEEK_SET);
+    fwrite((void *)pe32->optional_header, sizeof(IMAGE_OPTIONAL_HEADER32), 1, pe_file);
+    printf("\tOPTIONAL header saved\n");
+
+    fseek(pe_file, pe32->offset_first_section_header, SEEK_SET);
+    for (i = 0; i < pe32->number_of_sections; i = i + 1) {
+        fwrite((void *)pe32->sections_headers[i], sizeof(IMAGE_SECTION_HEADER), 1, pe_file);
+        printf("\tSECTION header saved (%s)\n", pe32->sections_headers[i]->Name);
+    }
+
+    fclose(pe_file);
+    return 1;
 }

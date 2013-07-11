@@ -323,6 +323,22 @@ int check_free_sections_headers_space(const PE32 pe32) {
     return 0;
 }
 
+/* \arg \c pe32 dump of the PE file's header
+ * \return size of available space in the code section
+ * \return 0 if failed or no available space
+ */
+unsigned int get_available_section_space(const PE32 pe32) {
+    int id = 0;
+
+    id = get_code_section(pe32);
+    if (id == -1) {
+        fputs("Invalid ID of the code section", stderr);
+        return 0;
+    }
+
+    return get_alignment(pe32->sections_headers[id]->Misc.VirtualSize, pe32->optional_header->FileAlignment);
+}
+
 /*! \argc \c pe32dump of the PE file's headers
  *  \return id of the code section's header
  *  \return -1 if none found
