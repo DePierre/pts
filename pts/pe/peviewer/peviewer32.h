@@ -11,5 +11,6 @@ int dump_pe32(const char *filename, PE32 *pe32);
 void delete_pe32(PE32 *pe32);
 
 int check_free_sections_headers_space(const PE32 pe32);
+int get_code_section(const PE32 pe32);
 
 #endif /* PEVIEWER32_H */

@@ -322,3 +322,26 @@ int check_free_sections_headers_space(const PE32 pe32) {
 
     return 0;
 }
+
+/*! \argc \c pe32dump of the PE file's headers
+ *  \return id of the code section's header
+ *  \return -1 if none found
+ */
+int get_code_section(const PE32 pe32) {
+    unsigned int i = 0;
+    int id = -1;
+
+    if (pe32 == NULL) {
+        fputs("PE32 structure cannot be NULL", stderr);
+        return -1;
+    }
+
+    while (id == -1) {
+        /* AND logic between the section's characteristics and executable code */
+        if (pe32->sections_headers[i]->Characteristics & IMAGE_SCN_MEM_EXECUTE)
+            id = i;
+        i = i + 1;
+    }
+
+    return id;
+}
