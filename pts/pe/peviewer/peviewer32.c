@@ -6,13 +6,16 @@
 #include <peviewer.h>
 #include <peviewer32.h>
 
-/*! \arg \c filename name of the PE file
- *  \arg \c dest destination to write the pe header
- *  \return 0 if it fails
- *  \return 1 otherwise
+/**
+ * \fn unsigned int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest)
+ * \brief Dump the PE header from a PE file.
+ *
+ * \param filename The name of the PE file.
+ * \param dest A valid pointer to an IMAGE_NT_HEADERS32.
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
-int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest)
-{
+unsigned int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest) {
     FILE *pe_file = NULL;
     PIMAGE_DOS_HEADER dos_header = NULL;
 
@@ -42,13 +45,16 @@ int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest)
     return 1;
 }
 
-/*! \arg \c filename name of the PE file
- *  \arg \c dest destination to write the coff header
- *  \return 0 if it fails
- *  \return 1 otherwise
+/**
+ * \fn unsigned int get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest)
+ * \brief Dump the COFF header from a PE file.
+ *
+ * \param filename The name of the PE file.
+ * \param dest A valid pointer to an IMAGE_FILE_HEADER.
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
-int get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest)
-{
+unsigned int get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest) {
     PIMAGE_NT_HEADERS32 pe_header = NULL;
 
     pe_header = (PIMAGE_NT_HEADERS32)calloc(1, sizeof(IMAGE_NT_HEADERS32));
@@ -70,13 +76,16 @@ int get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest)
     return 1;
 }
 
-/*! \arg \c filename of the PE file
- *  \arg \c dest destination to write the optional header
- *  \return 0 if it fails
- *  \return 1 otherwise
+/**
+ * \fn unsigned int get_optional_header32(const char *filename, PIMAGE_OPTIONAL_HEADER32 dest)
+ * \brief Dump the OPTIONAL header from a PE file.
+ *
+ * \param filename The name of the PE file.
+ * \param dest A valid pointer to an IMAGE_OPTIONAL_HEADER32.
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
-int get_optional_header32(const char *filename, PIMAGE_OPTIONAL_HEADER32 dest)
-{
+unsigned int get_optional_header32(const char *filename, PIMAGE_OPTIONAL_HEADER32 dest) {
     PIMAGE_NT_HEADERS32 pe_header = NULL;
 
     pe_header = (PIMAGE_NT_HEADERS32)calloc(1, sizeof(IMAGE_NT_HEADERS32));
@@ -97,12 +106,17 @@ int get_optional_header32(const char *filename, PIMAGE_OPTIONAL_HEADER32 dest)
     return 1;
 }
 
-/*! \arg \c filename of the PE file
- *  \arg \c dest destination to write the sections headers
- *  \return 0 if it fails
- *  \return 1 otherwise
+/**
+ * \fn unsigned int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections_headers, const unsigned int nb_sections)
+ * \brief Dump the SECTION headers from a PE file.
+ *
+ * \param filename The name of the PE file.
+ * \param sections_headers A valid array of IMAGE_SECTION_HEADER.
+ * \param nb_sections The number of sections to dump
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
-int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections_headers, const unsigned int nb_sections) {
+unsigned int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections_headers, const unsigned int nb_sections) {
     FILE *pe_file = NULL;
     PIMAGE_DOS_HEADER dos_header = NULL;
     PIMAGE_FILE_HEADER coff_header = NULL;
@@ -166,12 +180,16 @@ int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections
     return 1;
 }
 
-/*! \arg \c filename of the PE file
- *  \arg \c pe32 destination to write the pe file dump
- *  \return 0 if it fails
- *  \return 1 otherwise
+/**
+ * \fn unsigned int dump_pe32(const char *filename, PE32 *pe32)
+ * \brief Dump all the headers from a PE file.
+ *
+ * \param filename The name of the PE file.
+ * \param dest A valid pointer to a PE32 structure.
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
-int dump_pe32(const char *filename, PE32 *pe32) {
+unsigned int dump_pe32(const char *filename, PE32 *pe32) {
     unsigned int i = 0;
 
     *pe32 = (PE32)calloc(1, sizeof(Struct_PE32));
@@ -276,27 +294,42 @@ int dump_pe32(const char *filename, PE32 *pe32) {
     return 1;
 }
 
-/*! \arg \c pe32 destination to be free
+/**
+ * \fn void delete_pe32(PE32 *pe32)
+ * \brief Free a PE32 structure.
+ *
+ * \param pe32 the structure to be free.
  */
 void delete_pe32(PE32 *pe32) {
     unsigned int i = 0;
     for (i = 0; i < (*pe32)->number_of_sections; i = i + 1)
         free((*pe32)->sections_headers[i]);
     free((*pe32)->sections_headers);
+    (*pe32)->sections_headers = NULL;
 
     free((*pe32)->optional_header);
+    (*pe32)->optional_header = NULL;
     free((*pe32)->coff_header);
+    (*pe32)->coff_header = NULL;
     free((*pe32)->pe_header);
+    (*pe32)->pe_header = NULL;
     free((*pe32)->dos_header);
+    (*pe32)->dos_header = NULL;
     free((void *)(*pe32)->filename);
     free(*pe32);
+    *pe32 = NULL;
 }
 
-/*! \arg \c pe32 dump of the PE file's headers
- *  \return 0 if there is no free space for a new section header
- *  \return 1 otherwise
+/**
+ * \fn unsigned int check_free_sections_headers_space(const PE32 pe32)
+ * \brief Check if there is enough free space between the last section header
+ * and the first section for a new section header.
+ *
+ * \param pe32 Dump of the PE headers.
+ *
+ * \return 0 if there is no free space, 1 otherwise.
  */
-int check_free_sections_headers_space(const PE32 pe32) {
+unsigned int check_free_sections_headers_space(const PE32 pe32) {
     unsigned int offset_end_sections_headers = 0;
     unsigned int offset_start_raw_code = 0;
     unsigned int i = 0;
@@ -323,9 +356,13 @@ int check_free_sections_headers_space(const PE32 pe32) {
     return 0;
 }
 
-/* \arg \c pe32 dump of the PE file's header
- * \return size of available space in the code section
- * \return 0 if failed or no available space
+/**
+ * \fn unsigned int get_available_section_space(const PE32 pe32)
+ * \brief Compute the free available space at the end of the code section.
+ *
+ * \param pe32 Dump of the PE headers.
+ *
+ * \return 0 if it fails or if there is no space, the amount of free space otherwise.
  */
 unsigned int get_available_section_space(const PE32 pe32) {
     int id = 0;
@@ -339,9 +376,13 @@ unsigned int get_available_section_space(const PE32 pe32) {
     return get_alignment(pe32->sections_headers[id]->Misc.VirtualSize, pe32->optional_header->FileAlignment);
 }
 
-/*! \argc \c pe32dump of the PE file's headers
- *  \return id of the code section's header
- *  \return -1 if none found
+/**
+ * \fn int get_code_section(const PE32 pe32)
+ * \brief Find the index of the code section.
+ *
+ * \param pe32 Dump of the PE headers.
+ *
+ * \return -1 if no code section found, the id of the code section otherwise.
  */
 int get_code_section(const PE32 pe32) {
     unsigned int i = 0;

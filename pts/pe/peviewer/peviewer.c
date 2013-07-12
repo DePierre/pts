@@ -5,10 +5,15 @@
 
 #include <peviewer.h>
 
-/*! \arg \c filename name of the PE file
- * \returns 1 if the file is a correct PE one, 0 otherwise
+/**
+ * \fn int is_pe(const char *filename).
+ * \brief Test if filename is a valid PE file.
+ *
+ * \param filename The name of the PE file.
+ *
+ * \return 0 if it's not a valid PE file, 1 otherwise.
  */
-int is_pe(const char *filename)
+unsigned int is_pe(const char *filename)
 {
     FILE *pe_file = NULL;
     uint32_t signature= 0;
@@ -45,10 +50,15 @@ int is_pe(const char *filename)
     return res;
 }
 
-/*! \arg \c filename name of the PE file
- * \returns PECLASS32 (1) if it's a 32bits application
- * \returns PECLASS64 (2) if it's a 64bits application
- * \returns PECLASSNONE (0) otherwise
+/**
+ * \fn int get_arch_pe(const char *filename)
+ * \brief Retrieve the architecture of filename.
+ *
+ * \param filename The name of the valid PE file.
+ *
+ * \return PECLASS32 if it is a 32bits application.
+ * \return PECLASS64 if it is a 64bits application.
+ * \return PECLASSNONE otherwise.
  */
 int get_arch_pe(const char *filename)
 {
@@ -86,74 +96,39 @@ int get_arch_pe(const char *filename)
     return res;
 }
 
-/*! \arg \c filename name of the PE file
- *  \arg \c dest destination to write the dos header
+/**
+ * \fn void get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
+ * \brief Dump the DOS header from filename.
+ *
+ * \param filename The name of a valid PE file.
+ * \param dest A pointer where to save the DOS header.
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
-void get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
+unsigned int get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
 {
     FILE *pe_file = NULL;
 
     pe_file = fopen(filename, "rb");
     if (pe_file == NULL) {
         perror("Error: cannot open the file");
-        exit(1);
+        return 0;
     }
     /* Read the image dos header of the file */
     fread((void *)dest, sizeof(IMAGE_DOS_HEADER), 1, pe_file);
 
     fclose(pe_file);
+    return 1;
 }
 
-/*! \arg \c filename name of the PE file
- *  \arg \c offset offset of the first section header
- *  \arg \c name name of the section the user wants
- *  \arg \c nb_sections the number of the sections in the file
- *  \arg \c dest destination to write the section
- * \returns 0 if failed
- * \returns 1 if succeed
- */
-int cmp_section_by_name(const char *filename, uint32_t offset, const char *name, uint16_t nb_sections, PIMAGE_SECTION_HEADER dest)
-{
-    FILE *pe_file = NULL;
-    PIMAGE_SECTION_HEADER section_header = NULL;
-    int res = 0;
-    uint16_t i = 0;
-
-    section_header = (PIMAGE_SECTION_HEADER)calloc(1, sizeof(IMAGE_SECTION_HEADER));
-    if (section_header == NULL) {
-        perror("Error: cannot allocate memory for section header");
-        exit(1);
-    }
-
-    pe_file = fopen(filename, "rb");
-    if (pe_file == NULL) {
-        perror("Error: cannot open the file");
-        exit(1);
-    }
-    fseek(pe_file, offset, SEEK_CUR);
-    /* We read the first section */
-    fread((void *)section_header, sizeof(IMAGE_SECTION_HEADER), 1, pe_file);
-
-    /* We read every section name to find the one */
-    while (strcmp(name, (char *)section_header->Name) && i < nb_sections) {
-        fread((void *)section_header, sizeof(IMAGE_SECTION_HEADER), 1, pe_file);
-        i = i + 1;
-    }
-
-    /* If the last section we have read is the one, we copy it into the dest */
-    if (!strcmp(name, (char *)section_header->Name)) {
-        memcpy(dest, section_header, sizeof(IMAGE_SECTION_HEADER));
-        res = 1;
-    }
-
-    free(section_header);
-    fclose(pe_file);
-    return res;
-}
-
-/*! \arg \c value the value to be aligned
- * \arg \c alignment the alignment
- * \returns value aligned
+/**
+ * \fn uint32_t get_alignment(uint32_t value, uint32_t alignment)
+ * \brief Compute the aligned value of value according to alignment.
+ *
+ * \param value The value to be aligned.
+ * \param alignment The alignment value.
+ *
+ * \return The aligned value of value according to alignment.
  */
 uint32_t get_alignment(uint32_t value, uint32_t alignment)
 {

@@ -8,10 +8,14 @@
 #include <peviewer.h>
 #include <peviewer32.h>
 
-/* \arg \c pe32 dump of the PE file's header
- * \arg \c loader the loader to add
- * \return 0 if it fails
- * \return 1 otherwise
+/**
+ * \fn unsigned int pack32(PE32 *pe32, Loader loader)
+ * \brief Pack the PE file with the loader.
+ *
+ * \param pe32 Dump of the PE headers.
+ * \param loader Payload to add in pe32.
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
 unsigned int pack32(PE32 *pe32, Loader loader) {
     unsigned int free_space = 0;
@@ -32,10 +36,14 @@ unsigned int pack32(PE32 *pe32, Loader loader) {
     return error;
 }
 
-/*! \arg \c pe32 a pointer to the PE headers dump
- *  \arg \c loader the loader to add
- *  \return 0 if it fails
- *  \return 1 otherwise
+/**
+ * \fn unsigned int append_loader32(PE32 *pe32, Loader loader)
+ * \brief Append the payload at the end of the code section.
+ *
+ * \param pe32 Dump of the PE headers.
+ * \param loader Payload to add in pe32.
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
 unsigned int append_loader32(PE32 *pe32, Loader loader) {
     FILE *pe_file = NULL;
@@ -72,10 +80,14 @@ unsigned int append_loader32(PE32 *pe32, Loader loader) {
     return 1;
 }
 
-/*! \arg \c pe32 a pointer to the PE headers dump
- *  \arg \c loader the loader to add
- *  \return 0 if it fails
- *  \return 1 otherwise
+/**
+ * \fn unsigned int add_section32(PE32 *pe32, Loader loader)
+ * \brief Create a new section for the payload.
+ *
+ * \param pe32 Dump of the PE headers.
+ * \param loader Payload to add in pe32.
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
 unsigned int add_section32(PE32 *pe32, Loader loader) {
     PIMAGE_SECTION_HEADER new_section = NULL;
@@ -176,10 +188,13 @@ unsigned int add_section32(PE32 *pe32, Loader loader) {
     return 1;
 }
 
-/*! Save the new headers into the file.
- *  \arg \c pe32 dump of the PE file's header
- *  \return 0 if it fails
- *  \return 1 otherwise
+/**
+ * \fn unsigned int save_section32(const PE32 pe32)
+ * \brief Save the last section header into the file.
+ *
+ * \param pe32 Dump of the PE headers.
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
 unsigned int save_section32(const PE32 pe32) {
     FILE *pe_file = NULL;
@@ -204,10 +219,14 @@ unsigned int save_section32(const PE32 pe32) {
     return 1;
 }
 
-/*! \arg \c pe32 dump of the PE file's header
- *  \arg \c loader the loader to save
- *  \return 0 if it fails
- *  \return 1 otherwise
+/**
+ * \fn unsigned int write_loader32(const PE32 pe32, const Loader loader)
+ * \brief Save the payload into the file
+ *
+ * \param pe32 Dump of the PE headers.
+ * \param loader Payload to add in pe32.
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
 unsigned int write_loader32(const PE32 pe32, const Loader loader) {
     FILE *pe_file = NULL;
@@ -234,9 +253,13 @@ unsigned int write_loader32(const PE32 pe32, const Loader loader) {
     return 1;
 }
 
-/*! \arg \c pe32 dump of the PE file's header
- *  \return 0 if it fails
- *  \return 1 otherwise
+/**
+ * \fn unsigned int save_dump32(const PE32 pe32)
+ * \brief Save all the PE headers into the file.
+ *
+ * \param pe32 Dump of the PE headers.
+ *
+ * \return 0 if it fails, 1 otherwise.
  */
 unsigned int save_dump32(const PE32 pe32) {
     FILE *pe_file = NULL;
