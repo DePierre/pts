@@ -14,3 +14,6 @@
 
 # tests directory
 pts/tests/
+
+# docs directory
+pts/docs/
