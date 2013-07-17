@@ -3,21 +3,24 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <errors.h>
 #include <pepacker32.h>
 #include <pestruct.h>
 #include <peviewer.h>
 #include <peviewer32.h>
 
 /**
- * \fn unsigned int pack32(PE32 *pe32, Loader loader)
+ * \fn int pack32(PE32 *pe32, Loader loader)
  * \brief Pack the PE file with the loader.
+ *
+ * \todo Process the errors.
  *
  * \param pe32 Dump of the PE headers.
  * \param loader Payload to add in pe32.
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return The error code from the called functions.
  */
-unsigned int pack32(PE32 *pe32, Loader loader) {
+int pack32(PE32 *pe32, Loader loader) {
     unsigned int free_space = 0;
     unsigned int error = 0;
 
@@ -37,15 +40,16 @@ unsigned int pack32(PE32 *pe32, Loader loader) {
 }
 
 /**
- * \fn unsigned int append_loader32(PE32 *pe32, Loader loader)
+ * \fn int append_loader32(PE32 *pe32, Loader loader)
  * \brief Append the payload at the end of the code section.
  *
  * \param pe32 Dump of the PE headers.
  * \param loader Payload to add in pe32.
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return SUCCESS if it succeeds.
  */
-unsigned int append_loader32(PE32 *pe32, Loader loader) {
+int append_loader32(PE32 *pe32, Loader loader) {
     FILE *pe_file = NULL;
     unsigned int offset_start_free_space = 0;
     unsigned int id = 0;
@@ -70,26 +74,28 @@ unsigned int append_loader32(PE32 *pe32, Loader loader) {
     pe_file = fopen((*pe32)->filename, "rb+");
     if (pe_file == NULL) {
         perror("Error: Cannot open the file");
-        return 0;
+        return FILE_ERROR;
     }
 
     fseek(pe_file, offset_start_free_space, SEEK_SET);
     fwrite((void *)loader->payload, loader->length * sizeof(*loader->payload), 1, pe_file);
 
     fclose(pe_file);
-    return 1;
+    return SUCCESS;
 }
 
 /**
- * \fn unsigned int add_section32(PE32 *pe32, Loader loader)
+ * \fn int add_section32(PE32 *pe32, Loader loader)
  * \brief Create a new section for the payload.
  *
  * \param pe32 Dump of the PE headers.
  * \param loader Payload to add in pe32.
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return NO_FREE_SPACE_IN_SECTIONS_HEADERS if there is no available space for a new section header.
+ * \return ALLOCATION_ERROR if it cannot allocate memory.
+ * \return SUCCESS if it succeeds.
  */
-unsigned int add_section32(PE32 *pe32, Loader loader) {
+int add_section32(PE32 *pe32, Loader loader) {
     PIMAGE_SECTION_HEADER new_section = NULL;
     PIMAGE_OPTIONAL_HEADER32 optional_header = NULL;
     PIMAGE_FILE_HEADER coff_header = NULL;
@@ -101,14 +107,14 @@ unsigned int add_section32(PE32 *pe32, Loader loader) {
 
     if (!check_free_sections_headers_space(*pe32)) {
         fputs("Error: not enough space to add a new section", stderr);
-        return 0;
+        return NO_FREE_SPACE_IN_SECTIONS_HEADERS;
     }
 
     /* Allocate the new section for the binary */
     new_section = (PIMAGE_SECTION_HEADER)calloc(1, sizeof(IMAGE_SECTION_HEADER));
     if (new_section == NULL) {
         perror("Error: cannot allocate memory for the new section");
-        return 0;
+        return ALLOCATION_ERROR;
     }
 
 
@@ -163,14 +169,14 @@ unsigned int add_section32(PE32 *pe32, Loader loader) {
     if ((*pe32)->sections_headers == NULL) {
         perror("Error: cannot re-allocate memory for the new section in PE32");
         free(new_section);
-        return 0;
+        return ALLOCATION_ERROR;
     }
 
     (*pe32)->sections_headers[(*pe32)->number_of_sections - 1] = (PIMAGE_SECTION_HEADER)calloc(1, sizeof(IMAGE_SECTION_HEADER));
     if ((*pe32)->sections_headers[(*pe32)->number_of_sections - 1] == NULL) {
         perror("Error: cannot allocate memory for the new section in PE32");
         free(new_section);
-        return 0;
+        return ALLOCATION_ERROR;
     }
     memcpy(
         (void *)(*pe32)->sections_headers[(*pe32)->number_of_sections - 1],
@@ -185,25 +191,26 @@ unsigned int add_section32(PE32 *pe32, Loader loader) {
     free(optional_header);
     free(last_section_header);
     free(coff_header);
-    return 1;
+    return SUCCESS;
 }
 
 /**
- * \fn unsigned int save_section32(const PE32 pe32)
+ * \fn int save_section32(const PE32 pe32)
  * \brief Save the last section header into the file.
  *
  * \param pe32 Dump of the PE headers.
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return SUCCESS if it succeeds.
  */
-unsigned int save_section32(const PE32 pe32) {
+int save_section32(const PE32 pe32) {
     FILE *pe_file = NULL;
     unsigned int offset_last_section = 0;
 
     pe_file = fopen(pe32->filename, "rb+");
     if (pe_file == NULL) {
         perror("Error: cannot open the file");
-        return 0;
+        return FILE_ERROR;
     }
 
     /* Compute offset of the last section */
@@ -216,19 +223,20 @@ unsigned int save_section32(const PE32 pe32) {
 
     fclose(pe_file);
 
-    return 1;
+    return SUCCESS;
 }
 
 /**
- * \fn unsigned int write_loader32(const PE32 pe32, const Loader loader)
- * \brief Save the payload into the file
+ * \fn int write_loader32(const PE32 pe32, const Loader loader)
+ * \brief Save the payload into the file.
  *
  * \param pe32 Dump of the PE headers.
  * \param loader Payload to add in pe32.
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return SUCCESS if it succeeds.
  */
-unsigned int write_loader32(const PE32 pe32, const Loader loader) {
+int write_loader32(const PE32 pe32, const Loader loader) {
     FILE *pe_file = NULL;
     unsigned int filled = 0;
     unsigned int i = 0;
@@ -237,7 +245,7 @@ unsigned int write_loader32(const PE32 pe32, const Loader loader) {
     pe_file = fopen(pe32->filename, "rb+");
     if (pe_file == NULL) {
         perror("Error: cannot open the file");
-        return 0;
+        return FILE_ERROR;
     }
 
     fseek(pe_file, 0, SEEK_END);
@@ -250,25 +258,26 @@ unsigned int write_loader32(const PE32 pe32, const Loader loader) {
         fwrite(&null, sizeof(null), 1, pe_file);
 
     fclose(pe_file);
-    return 1;
+    return SUCCESS;
 }
 
 /**
- * \fn unsigned int save_dump32(const PE32 pe32)
+ * \fn int save_dump32(const PE32 pe32)
  * \brief Save all the PE headers into the file.
  *
- * \param pe32 Dump of the PE headers.
+ * \param  pe32 Dump of the PE headers.
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return SUCCESS if it succeeds.
  */
-unsigned int save_dump32(const PE32 pe32) {
+int save_dump32(const PE32 pe32) {
     FILE *pe_file = NULL;
     unsigned int i = 0;
 
     pe_file = fopen(pe32->filename, "rb+");
     if (pe_file == NULL) {
         perror("Error: cannot open the file");
-        return 0;
+        return FILE_ERROR;
     }
 
     printf("[+] Save the new PE headers:\n");
@@ -295,5 +304,5 @@ unsigned int save_dump32(const PE32 pe32) {
     }
 
     fclose(pe_file);
-    return 1;
+    return SUCCESS;
 }

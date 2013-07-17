@@ -2,39 +2,44 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+
+#include <errors.h>
 #include <pestruct.h>
 #include <peviewer.h>
 #include <peviewer32.h>
 
 /**
- * \fn unsigned int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest)
+ * \fn int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest)
  * \brief Dump the PE header from a PE file.
  *
  * \param filename The name of the PE file.
  * \param dest A valid pointer to an IMAGE_NT_HEADERS32.
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return ALLOCATION_ERROR if allocations fail.
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return DOS_HEADER_ERROR if it cannot dump the DOS header.
+ * \return SUCCESS otherwise.
  */
-unsigned int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest) {
+int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest) {
     FILE *pe_file = NULL;
     PIMAGE_DOS_HEADER dos_header = NULL;
 
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
     if (dos_header == NULL) {
         perror("Error: cannot allocate memory for dos header");
-        return 0;
+        return ALLOCATION_ERROR;
     }
     get_dos_header(filename, dos_header);
     if (dos_header == NULL) {
         fputs("Cannot read DOS header", stderr);
         free(dos_header);
-        return 0;
+        return DOS_HEADER_ERROR;
     }
     pe_file = fopen(filename, "rb");
     if (pe_file == NULL) {
         perror("Error: cannot open the file");
         free(dos_header);
-        return 0;
+        return FILE_ERROR;
     }
     /* Move the cursor to the beginning of IMAGE_NT_HEADERS */
     fseek(pe_file, dos_header->e_lfanew, SEEK_SET);
@@ -42,81 +47,90 @@ unsigned int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest) {
 
     free(dos_header);
     fclose(pe_file);
-    return 1;
+    return SUCCESS;
 }
 
 /**
- * \fn unsigned int get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest)
+ * \fn int get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest)
  * \brief Dump the COFF header from a PE file.
  *
  * \param filename The name of the PE file.
  * \param dest A valid pointer to an IMAGE_FILE_HEADER.
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return ALLOCATION_ERROR if allocations fail.
+ * \return PE_HEADER_ERROR if it cannot dump the PE header.
+ * \return SUCCESS otherwise.
  */
-unsigned int get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest) {
+int get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest) {
     PIMAGE_NT_HEADERS32 pe_header = NULL;
 
     pe_header = (PIMAGE_NT_HEADERS32)calloc(1, sizeof(IMAGE_NT_HEADERS32));
     if (pe_header == NULL) {
         perror("Error: cannot allocate memory for pe header");
-        return 0;
+        return ALLOCATION_ERROR;
     }
     get_pe_header32(filename, pe_header);
     if (pe_header == NULL) {
         fputs("Cannot read PE header", stderr);
         free(pe_header);
-        return 0;
+        return PE_HEADER_ERROR;
     }
 
     /* IMAGE_NT_HEADERS32 contains the coff header so we just have to copy it into the dest */
     memcpy(dest, &pe_header->FileHeader, sizeof(IMAGE_FILE_HEADER));
 
     free(pe_header);
-    return 1;
+    return SUCCESS;
 }
 
 /**
- * \fn unsigned int get_optional_header32(const char *filename, PIMAGE_OPTIONAL_HEADER32 dest)
+ * \fn int get_optional_header32(const char *filename, PIMAGE_OPTIONAL_HEADER32 dest)
  * \brief Dump the OPTIONAL header from a PE file.
  *
  * \param filename The name of the PE file.
  * \param dest A valid pointer to an IMAGE_OPTIONAL_HEADER32.
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return ALLOCATION_ERROR if allocations fail.
+ * \return PE_HEADER_ERROR if it cannot dump the PE header.
+ * \return SUCCESS otherwise.
  */
-unsigned int get_optional_header32(const char *filename, PIMAGE_OPTIONAL_HEADER32 dest) {
+int get_optional_header32(const char *filename, PIMAGE_OPTIONAL_HEADER32 dest) {
     PIMAGE_NT_HEADERS32 pe_header = NULL;
 
     pe_header = (PIMAGE_NT_HEADERS32)calloc(1, sizeof(IMAGE_NT_HEADERS32));
     if (pe_header == NULL) {
         perror("Error: cannot allocate memory for pe header");
-        return 0;
+        return ALLOCATION_ERROR;
     }
     get_pe_header32(filename, pe_header);
     if (pe_header == NULL) {
         fputs("Cannot read PE header", stderr);
         free(pe_header);
-        return 0;
+        return PE_HEADER_ERROR;
     }
     /* IMAGE_NT_HEADERS32 contains the Optional header */
     memcpy(dest, &pe_header->OptionalHeader, sizeof(IMAGE_OPTIONAL_HEADER32));
 
     free(pe_header);
-    return 1;
+    return SUCCESS;
 }
 
 /**
- * \fn unsigned int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections_headers, const unsigned int nb_sections)
+ * \fn int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections_headers, const unsigned int nb_sections)
  * \brief Dump the SECTION headers from a PE file.
  *
  * \param filename The name of the PE file.
  * \param sections_headers A valid array of IMAGE_SECTION_HEADER.
  * \param nb_sections The number of sections to dump
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return NULL_POINTER if sections_headers is NULL.
+ * \return ALLOCATION_ERROR if allocations fail.
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return DOS_HEADER_ERROR if it cannot dump the DOS header.
+ * \return COFF_HEADER_ERROR if it cannot dump the COFF header.
+ * \return SUCCESS otherwise.
  */
-unsigned int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections_headers, const unsigned int nb_sections) {
+int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections_headers, const unsigned int nb_sections) {
     FILE *pe_file = NULL;
     PIMAGE_DOS_HEADER dos_header = NULL;
     PIMAGE_FILE_HEADER coff_header = NULL;
@@ -125,19 +139,19 @@ unsigned int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER 
 
     if (sections_headers == NULL) {
         fputs("Structure SECTION cannot be null", stderr);
-        return 0;
+        return NULL_POINTER;
     }
 
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
     if (dos_header == NULL) {
         perror("Error: cannot allocate memory for dos header");
-        return 0;
+        return ALLOCATION_ERROR;
     }
     coff_header = (PIMAGE_FILE_HEADER)calloc(1, sizeof(IMAGE_FILE_HEADER));
     if (coff_header == NULL) {
         perror("Error: cannot allocate memory for coff header");
         free(dos_header);
-        return 0;
+        return ALLOCATION_ERROR;
     }
 
     get_dos_header(filename, dos_header);
@@ -145,14 +159,14 @@ unsigned int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER 
         fputs("Cannot read DOS header", stderr);
         free(coff_header);
         free(dos_header);
-        return 0;
+        return DOS_HEADER_ERROR;
     }
     get_coff_header32(filename, coff_header);
     if (coff_header == NULL) {
         fputs("Cannot read COFF header", stderr);
         free(coff_header);
         free(dos_header);
-        return 0;
+        return COFF_HEADER_ERROR;
     }
 
     /* Offset leads now to the Signature of IMAGE_NT_HEADERS */
@@ -167,7 +181,7 @@ unsigned int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER 
         perror("Error: cannot open the file");
         free(dos_header);
         free(coff_header);
-        return 0;
+        return FILE_ERROR;
     }
     fseek(pe_file, offset_section, SEEK_SET);
     for (i = 0; i < nb_sections; i = i + 1)
@@ -177,32 +191,35 @@ unsigned int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER 
     free(dos_header);
     fclose(pe_file);
 
-    return 1;
+    return SUCCESS;
 }
 
 /**
- * \fn unsigned int dump_pe32(const char *filename, PE32 *pe32)
+ * \fn int dump_pe32(const char *filename, PE32 *pe32)
  * \brief Dump all the headers from a PE file.
+ *
+ * \todo Handle the errors from the called functions.
  *
  * \param filename The name of the PE file.
  * \param dest A valid pointer to a PE32 structure.
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return ALLOCATION_ERROR if allocations fail.
+ * \return SUCCESS otherwise.
  */
-unsigned int dump_pe32(const char *filename, PE32 *pe32) {
+int dump_pe32(const char *filename, PE32 *pe32) {
     unsigned int i = 0;
 
     *pe32 = (PE32)calloc(1, sizeof(Struct_PE32));
     if (*pe32 == NULL) {
         perror("Error: cannot allocate memory for PE32");
-        return 0;
+        return ALLOCATION_ERROR;
     }
 
     (*pe32)->filename = (char *)calloc(strlen(filename), sizeof(char));
     if ((*pe32)->filename == NULL) {
         perror("Error: cannot allocate memory for filename");
         free(*pe32);
-        return 0;
+        return ALLOCATION_ERROR;
     }
 
     memcpy((void *)(*pe32)->filename, filename, strlen(filename) * sizeof(char));
@@ -214,7 +231,7 @@ unsigned int dump_pe32(const char *filename, PE32 *pe32) {
         perror("Error: cannot allocate memory for DOS header");
         free((void *)(*pe32)->filename);
         free(*pe32);
-        return 0;
+        return ALLOCATION_ERROR;
     }
     printf("[+] Dumping DOS header\n");
     (*pe32)->offset_dos_header = 0x0;
@@ -228,7 +245,7 @@ unsigned int dump_pe32(const char *filename, PE32 *pe32) {
         free((*pe32)->dos_header);
         free((void *)(*pe32)->filename);
         free(*pe32);
-        return 0;
+        return ALLOCATION_ERROR;
     }
     printf("[+] Dumping PE header\n");
     (*pe32)->offset_pe_header = (*pe32)->dos_header->e_lfanew;
@@ -243,7 +260,7 @@ unsigned int dump_pe32(const char *filename, PE32 *pe32) {
         free((*pe32)->dos_header);
         free((void *)(*pe32)->filename);
         free(*pe32);
-        return 0;
+        return ALLOCATION_ERROR;
     }
     printf("[+] Dumping COFF header\n");
     (*pe32)->offset_coff_header = (*pe32)->offset_pe_header + sizeof(uint32_t);
@@ -259,7 +276,7 @@ unsigned int dump_pe32(const char *filename, PE32 *pe32) {
         free((*pe32)->dos_header);
         free((void *)(*pe32)->filename);
         free(*pe32);
-        return 0;
+        return ALLOCATION_ERROR;
     }
     printf("[+] Dumping OPTIONAL header\n");
     (*pe32)->offset_optional_header = (*pe32)->offset_coff_header + sizeof(IMAGE_FILE_HEADER);
@@ -281,7 +298,7 @@ unsigned int dump_pe32(const char *filename, PE32 *pe32) {
         free((*pe32)->dos_header);
         free((void *)(*pe32)->filename);
         free(*pe32);
-        return 0;
+        return ALLOCATION_ERROR;
     }
     printf("[+] Dumping SECTIONS headers\n");
     printf("\tNumber of sections %d\n", (*pe32)->number_of_sections);
@@ -291,7 +308,7 @@ unsigned int dump_pe32(const char *filename, PE32 *pe32) {
     for (i = 0; i < (*pe32)->number_of_sections; i = i + 1)
         printf("\tSection %s\n", (*pe32)->sections_headers[i]->Name);
 
-    return 1;
+    return SUCCESS;
 }
 
 /**
@@ -321,22 +338,24 @@ void delete_pe32(PE32 *pe32) {
 }
 
 /**
- * \fn unsigned int check_free_sections_headers_space(const PE32 pe32)
+ * \fn int check_free_sections_headers_space(const PE32 pe32)
  * \brief Check if there is enough free space between the last section header
  * and the first section for a new section header.
  *
  * \param pe32 Dump of the PE headers.
  *
- * \return 0 if there is no free space, 1 otherwise.
+ * \return NULL_POINTER if sections_headers is NULL.
+ * \return SUCCESS if there is enough space for a new section header.
+ * \return NO_FREE_SPACE_IN_SECTIONS_HEADERS otherwise.
  */
-unsigned int check_free_sections_headers_space(const PE32 pe32) {
+int check_free_sections_headers_space(const PE32 pe32) {
     unsigned int offset_end_sections_headers = 0;
     unsigned int offset_start_raw_code = 0;
     unsigned int i = 0;
 
     if (pe32 == NULL) {
         fputs("PE32 structure cannot be NULL", stderr);
-        return 0;
+        return NULL_POINTER;
     }
 
     /* Find the offset of the end of the current sections headers */
@@ -351,26 +370,32 @@ unsigned int check_free_sections_headers_space(const PE32 pe32) {
 
     /* If there is enough space for a new section header */
     if (offset_start_raw_code - offset_end_sections_headers > sizeof(IMAGE_SECTION_HEADER))
-        return 1;
+        return SUCCESS;
 
-    return 0;
+    return NO_FREE_SPACE_IN_SECTIONS_HEADERS;
 }
 
 /**
- * \fn unsigned int get_available_section_space(const PE32 pe32)
+ * \fn int get_available_section_space(const PE32 pe32)
  * \brief Compute the free available space at the end of the code section.
  *
  * \param pe32 Dump of the PE headers.
  *
- * \return 0 if it fails or if there is no space, the amount of free space otherwise.
+ * \return NULL_POINTER if pe32 is NULL.
+ * \return NO_CODE_SECTION_FOUND if the code section cannot be found.
+ * \return The amount of free space otherwise.
  */
-unsigned int get_available_section_space(const PE32 pe32) {
+int get_available_section_space(const PE32 pe32) {
     int id = 0;
 
     id = get_code_section(pe32);
-    if (id == -1) {
+    if (id == NO_CODE_SECTION_FOUND) {
         fputs("Invalid ID of the code section", stderr);
-        return 0;
+        return NO_CODE_SECTION_FOUND;
+    }
+    else if (id == NULL_POINTER) {
+        fputs("PE32 cannot be NULL", stderr);
+        return NULL_POINTER;
     }
 
     return get_alignment(pe32->sections_headers[id]->Misc.VirtualSize, pe32->optional_header->FileAlignment);
@@ -382,18 +407,20 @@ unsigned int get_available_section_space(const PE32 pe32) {
  *
  * \param pe32 Dump of the PE headers.
  *
- * \return -1 if no code section found, the id of the code section otherwise.
+ * \return NULL_POINTER if pe32 is NULL.
+ * \return NO_CODE_SECTION_FOUND if the code section cannot be found.
+ * \return The id of the code section.
  */
 int get_code_section(const PE32 pe32) {
     unsigned int i = 0;
-    int id = -1;
+    int id = NO_CODE_SECTION_FOUND;
 
     if (pe32 == NULL) {
         fputs("PE32 structure cannot be NULL", stderr);
-        return -1;
+        return NULL_POINTER;
     }
 
-    while (id == -1) {
+    while (id == NO_CODE_SECTION_FOUND) {
         /* AND logic between the section's characteristics and executable code */
         if (pe32->sections_headers[i]->Characteristics & IMAGE_SCN_MEM_EXECUTE)
             id = i;

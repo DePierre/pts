@@ -188,21 +188,21 @@ typedef struct _IMAGE_SECTION_HEADER {
  * \brief Structure containing the dump of the 32bits headers from filename
  */
 typedef struct _Struct_PE32 {
-    const char *filename; /*!< Name of the PE file */
+    const char *filename; /**< Name of the PE file */
 
-    unsigned int offset_dos_header; /*!< Offset to the DOS header */
-    PIMAGE_DOS_HEADER dos_header; /*!< Dump of the DOS header */
+    unsigned int offset_dos_header; /**< Offset to the DOS header */
+    PIMAGE_DOS_HEADER dos_header; /**< Dump of the DOS header */
 
-    unsigned int offset_pe_header; /*!< Offset to the PE header */
-    PIMAGE_NT_HEADERS32 pe_header; /*!< Dump of the PE header */
-    unsigned int offset_coff_header; /*!< Offset to the COFF header */
-    PIMAGE_FILE_HEADER coff_header; /*!< Dump of the COFF header */
-    unsigned int offset_optional_header; /*!< Offset to the OPTIONAL header */
-    PIMAGE_OPTIONAL_HEADER32 optional_header; /*!< Dump of the OPTIONAL header */
+    unsigned int offset_pe_header; /**< Offset to the PE header */
+    PIMAGE_NT_HEADERS32 pe_header; /**< Dump of the PE header */
+    unsigned int offset_coff_header; /**< Offset to the COFF header */
+    PIMAGE_FILE_HEADER coff_header; /**< Dump of the COFF header */
+    unsigned int offset_optional_header; /**< Offset to the OPTIONAL header */
+    PIMAGE_OPTIONAL_HEADER32 optional_header; /**< Dump of the OPTIONAL header */
 
-    unsigned int offset_first_section_header; /*!< Offset to the first SECTION header */
-    unsigned int number_of_sections; /*!< Number of section headers */
-    PIMAGE_SECTION_HEADER *sections_headers; /*!< Array of the dump of the SECTION headers */
+    unsigned int offset_first_section_header; /**< Offset to the first SECTION header */
+    unsigned int number_of_sections; /**< Number of section headers */
+    PIMAGE_SECTION_HEADER *sections_headers; /**< Array of the dump of the SECTION headers */
 } Struct_PE32, *PE32;
 
 /**
@@ -210,21 +210,21 @@ typedef struct _Struct_PE32 {
  * \brief Structure containing the dump of the 64bits headers from filename
  */
 typedef struct _Struct_PE64 {
-    const char *filename; /*!< Name of the PE file */
+    const char *filename; /**< Name of the PE file */
 
-    unsigned int offset_dos_header; /*!< Offset to the DOS header */
-    PIMAGE_DOS_HEADER dos_header; /*!< Dump of the DOS header */
+    unsigned int offset_dos_header; /**< Offset to the DOS header */
+    PIMAGE_DOS_HEADER dos_header; /**< Dump of the DOS header */
 
-    unsigned int offset_pe_header; /*!< Offset to the PE header */
-    PIMAGE_NT_HEADERS64 pe_header; /*!< Dump of the PE header */
-    unsigned int offset_coff_header; /*!< Offset to the COFF header */
-    PIMAGE_FILE_HEADER coff_header; /*!< Dump of the COFF header */
-    unsigned int offset_optional_header; /*!< Offset to the OPTIONAL header */
-    PIMAGE_OPTIONAL_HEADER64 optional_header; /*!< Dump of the OPTIONAL header */
+    unsigned int offset_pe_header; /**< Offset to the PE header */
+    PIMAGE_NT_HEADERS64 pe_header; /**< Dump of the PE header */
+    unsigned int offset_coff_header; /**< Offset to the COFF header */
+    PIMAGE_FILE_HEADER coff_header; /**< Dump of the COFF header */
+    unsigned int offset_optional_header; /**< Offset to the OPTIONAL header */
+    PIMAGE_OPTIONAL_HEADER64 optional_header; /**< Dump of the OPTIONAL header */
 
-    unsigned int offset_first_section_header; /*!< Offset to the first SECTION header */
-    unsigned int number_of_sections; /*!< Number of section headers */
-    PIMAGE_SECTION_HEADER *sections_headers; /*!< Array of the dump of the SECTION headers */
+    unsigned int offset_first_section_header; /**< Offset to the first SECTION header */
+    unsigned int number_of_sections; /**< Number of section headers */
+    PIMAGE_SECTION_HEADER *sections_headers; /**< Array of the dump of the SECTION headers */
 } Struct_PE64, *PE64;
 
 #endif /* PESTRUCT_H */

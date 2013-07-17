@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <errors.h>
 #include <peviewer.h>
 
 /**
@@ -11,42 +12,50 @@
  *
  * \param filename The name of the PE file.
  *
- * \return 0 if it's not a valid PE file, 1 otherwise.
+ * \return ALLOCATION_ERROR if allocations fail.
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return INVALID_PE_SIGNATURE if the signature is not valid.
+ * \return SUCCESS if it is a valid PE file.
  */
-unsigned int is_pe(const char *filename)
+int is_pe(const char *filename)
 {
     FILE *pe_file = NULL;
     uint32_t signature= 0;
-    int res = 0;
+    int res = INVALID_PE_SIGNATURE;
     PIMAGE_DOS_HEADER dos_header = NULL;
 
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
     if (dos_header == NULL) {
         perror("Error: cannot allocate memory for dos header");
-        exit(1);
+        return ALLOCATION_ERROR;
     }
     /* Read the image dos header of the file */
     get_dos_header(filename, dos_header);
     if (dos_header == NULL) {
         fputs("Cannot read DOS header", stderr);
-        exit(1);
+        free(dos_header);
+        return ALLOCATION_ERROR;
     }
-    /* Check the magic number of the file */
-    if (dos_header->e_magic != IMAGE_DOS_SIGNATURE)
-        return 0;
 
-    pe_file = fopen(filename, "rb");
-    if (pe_file == NULL) {
-        perror("Error: cannot open the file");
-        exit(1);
+    /* Check the magic number of the file */
+    if (dos_header->e_magic == IMAGE_DOS_SIGNATURE) {
+        pe_file = fopen(filename, "rb");
+        if (pe_file == NULL) {
+            perror("Error: cannot open the file");
+            free(dos_header);
+            return FILE_ERROR;
+        }
+        fseek(pe_file, dos_header->e_lfanew, SEEK_SET);
+        fread((void *)&signature, sizeof(uint32_t), 1, pe_file);
+
+        /* Check the signature number of the file */
+        if (signature == IMAGE_NT_SIGNATURE)
+            res = SUCCESS;
+
+        fclose(pe_file);
     }
-    fseek(pe_file, dos_header->e_lfanew, SEEK_SET);
-    /* Check the signature number of the file */
-    fread((void *)&signature, sizeof(uint32_t), 1, pe_file);
-    res = (signature == IMAGE_NT_SIGNATURE) ? 1 : 0;
 
     free(dos_header);
-    fclose(pe_file);
     return res;
 }
 
@@ -56,6 +65,9 @@ unsigned int is_pe(const char *filename)
  *
  * \param filename The name of the valid PE file.
  *
+ * \return ALLOCATION_ERROR if allocations fail.
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return DOS_HEADER_ERROR if it cannot dump the DOS header.
  * \return PECLASS32 if it is a 32bits application.
  * \return PECLASS64 if it is a 64bits application.
  * \return PECLASSNONE otherwise.
@@ -70,17 +82,19 @@ int get_arch_pe(const char *filename)
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
     if (dos_header == NULL) {
         perror("Error: cannot allocate memory for dos header");
-        exit(1);
+        return ALLOCATION_ERROR;
     }
     get_dos_header(filename, dos_header);
     if (dos_header == NULL) {
         fputs("Cannot read DOS header", stderr);
-        exit(1);
+        free(dos_header);
+        return DOS_HEADER_ERROR;
     }
     pe_file = fopen(filename, "rb");
     if (pe_file == NULL) {
         perror("Error: cannot open the file");
-        exit(1);
+        free(dos_header);
+        return FILE_ERROR;
     }
     /* Move the cursor to the field Magic of the Optional header */
     fseek(pe_file, dos_header->e_lfanew + sizeof(uint32_t) + sizeof(IMAGE_FILE_HEADER), SEEK_SET);
@@ -97,28 +111,29 @@ int get_arch_pe(const char *filename)
 }
 
 /**
- * \fn void get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
+ * \fn int get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
  * \brief Dump the DOS header from filename.
  *
  * \param filename The name of a valid PE file.
  * \param dest A pointer where to save the DOS header.
  *
- * \return 0 if it fails, 1 otherwise.
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return SUCCESS otherwise.
  */
-unsigned int get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
+int get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
 {
     FILE *pe_file = NULL;
 
     pe_file = fopen(filename, "rb");
     if (pe_file == NULL) {
         perror("Error: cannot open the file");
-        return 0;
+        return FILE_ERROR;
     }
     /* Read the image dos header of the file */
     fread((void *)dest, sizeof(IMAGE_DOS_HEADER), 1, pe_file);
 
     fclose(pe_file);
-    return 1;
+    return SUCCESS;
 }
 
 /**
