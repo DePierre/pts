@@ -4,6 +4,8 @@ TODO
 General
 -------
 
+* Find a nice way to factorize code between 32 and 64bits structures for PE files
+
 Specific
 --------
 
@@ -12,7 +14,6 @@ Specific
         * Extend peviewer (Directories, Symbols, etc.)
         * Add print function to sum up the PE file
     2. PEPacker
-        * Extends the code to deal with 64bits architecture
 
 2. ELF
     * Everything

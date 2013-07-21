@@ -348,7 +348,7 @@ void delete_pe32(PE32 *pe32) {
  * \return SUCCESS if there is enough space for a new section header.
  * \return NO_FREE_SPACE_IN_SECTIONS_HEADERS otherwise.
  */
-int check_free_sections_headers_space(const PE32 pe32) {
+int check_free_sections_headers_space32(const PE32 pe32) {
     unsigned int offset_end_sections_headers = 0;
     unsigned int offset_start_raw_code = 0;
     unsigned int i = 0;
@@ -385,10 +385,10 @@ int check_free_sections_headers_space(const PE32 pe32) {
  * \return NO_CODE_SECTION_FOUND if the code section cannot be found.
  * \return The amount of free space otherwise.
  */
-int get_available_section_space(const PE32 pe32) {
+int get_available_section_space32(const PE32 pe32) {
     int id = 0;
 
-    id = get_code_section(pe32);
+    id = get_code_section32(pe32);
     if (id == NO_CODE_SECTION_FOUND) {
         fputs("Invalid ID of the code section", stderr);
         return NO_CODE_SECTION_FOUND;
@@ -411,7 +411,7 @@ int get_available_section_space(const PE32 pe32) {
  * \return NO_CODE_SECTION_FOUND if the code section cannot be found.
  * \return The id of the code section.
  */
-int get_code_section(const PE32 pe32) {
+int get_code_section32(const PE32 pe32) {
     unsigned int i = 0;
     int id = NO_CODE_SECTION_FOUND;
 
