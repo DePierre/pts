@@ -16,6 +16,8 @@
 #define COFF_HEADER_ERROR -104 /**< Error when the COFF header can't be dump @hideinitializer */
 #define NO_CODE_SECTION_FOUND -105 /**< Error when the code section cannot be found @hideinitializer */
 #define INVALID_PE_SIGNATURE -106 /**< Error when the PE signature is invalid @hideinitializer */
+#define OBJ_FILE -107 /**< Error when the file is an OBJ file @hideinitializer */
+#define NOT_EXECUTABLE -108 /**< Error when the file is not an executable file @hideinitializer */
 
 /* Errors from PEPACKER */
 

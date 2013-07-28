@@ -18,6 +18,8 @@
  * \return ALLOCATION_ERROR if allocations fail.
  * \return FILE_ERROR if it cannot handle the file.
  * \return DOS_HEADER_ERROR if it cannot dump the DOS header.
+ * \return NOT_EXECUTABLE if the file is not an executable file.
+ * \return OBJ_FILE if the file is an OBJ file.
  * \return SUCCESS otherwise.
  */
 int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest) {
@@ -45,6 +47,20 @@ int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest) {
     fseek(pe_file, dos_header->e_lfanew, SEEK_SET);
     fread((void *)dest, sizeof(IMAGE_NT_HEADERS32), 1, pe_file);
 
+    if (!(dest->FileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE)) {
+        fputs("Error: the file is not an executable file", stderr);
+        free(dos_header);
+        fclose(pe_file);
+        return NOT_EXECUTABLE;
+    }
+
+    if (!dest->FileHeader.SizeOfOptionalHeader) {
+        fputs("Error: the file is an OBJ file", stderr);
+        free(dos_header);
+        fclose(pe_file);
+        return OBJ_FILE;
+    }
+
     free(dos_header);
     fclose(pe_file);
     return SUCCESS;
@@ -59,6 +75,8 @@ int get_pe_header32(const char *filename, PIMAGE_NT_HEADERS32 dest) {
  *
  * \return ALLOCATION_ERROR if allocations fail.
  * \return PE_HEADER_ERROR if it cannot dump the PE header.
+ * \return NOT_EXECUTABLE if the file is not an executable file.
+ * \return OBJ_FILE if the file is an OBJ file.
  * \return SUCCESS otherwise.
  */
 int get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest) {
@@ -78,6 +96,18 @@ int get_coff_header32(const char *filename, PIMAGE_FILE_HEADER dest) {
 
     /* IMAGE_NT_HEADERS32 contains the coff header so we just have to copy it into the dest */
     memcpy(dest, &pe_header->FileHeader, sizeof(IMAGE_FILE_HEADER));
+
+    if (!(pe_header->FileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE)) {
+        fputs("Error: the file is not an executable file", stderr);
+        free(pe_header);
+        return NOT_EXECUTABLE;
+    }
+
+    if (!pe_header->FileHeader.SizeOfOptionalHeader) {
+        fputs("Error: the file is an OBJ file", stderr);
+        free(pe_header);
+        return OBJ_FILE;
+    }
 
     free(pe_header);
     return SUCCESS;
@@ -128,6 +158,8 @@ int get_optional_header32(const char *filename, PIMAGE_OPTIONAL_HEADER32 dest) {
  * \return FILE_ERROR if it cannot handle the file.
  * \return DOS_HEADER_ERROR if it cannot dump the DOS header.
  * \return COFF_HEADER_ERROR if it cannot dump the COFF header.
+ * \return NOT_EXECUTABLE if the file is not an executable file.
+ * \return OBJ_FILE if the file is an OBJ file.
  * \return SUCCESS otherwise.
  */
 int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections_headers, const unsigned int nb_sections) {
@@ -147,6 +179,7 @@ int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections
         perror("Error: cannot allocate memory for dos header");
         return ALLOCATION_ERROR;
     }
+
     coff_header = (PIMAGE_FILE_HEADER)calloc(1, sizeof(IMAGE_FILE_HEADER));
     if (coff_header == NULL) {
         perror("Error: cannot allocate memory for coff header");
@@ -161,6 +194,7 @@ int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections
         free(dos_header);
         return DOS_HEADER_ERROR;
     }
+
     get_coff_header32(filename, coff_header);
     if (coff_header == NULL) {
         fputs("Cannot read COFF header", stderr);
@@ -169,12 +203,26 @@ int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections
         return COFF_HEADER_ERROR;
     }
 
+    if (!(coff_header->Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE)) {
+        fputs("Error: the file is not an executable file", stderr);
+        free(coff_header);
+        free(dos_header);
+        return NOT_EXECUTABLE;
+    }
+
+    if (!coff_header->SizeOfOptionalHeader) {
+        fputs("Error: the file is an OBJ file", stderr);
+        free(coff_header);
+        free(dos_header);
+        return OBJ_FILE;
+    }
+
     /* Offset leads now to the Signature of IMAGE_NT_HEADERS */
     offset_section = dos_header->e_lfanew;
     /* Offset leads now to the OptionalHeader of IMAGE_NT_HEADERS */
     offset_section = offset_section + sizeof(uint32_t) + sizeof(IMAGE_FILE_HEADER);
     /* Offset leads now to the first section header */
-    offset_section = offset_section + coff_header->SizeOfOptionalHeader;
+    offset_section = offset_section + sizeof(IMAGE_OPTIONAL_HEADER32);
 
     pe_file = fopen(filename, "rb");
     if (pe_file == NULL) {
@@ -204,6 +252,8 @@ int get_sections_headers32(const char *filename, PIMAGE_SECTION_HEADER *sections
  * \param dest A valid pointer to a PE32 structure.
  *
  * \return ALLOCATION_ERROR if allocations fail.
+ * \return NOT_EXECUTABLE if the file is not an executable file.
+ * \return OBJ_FILE if the file is an OBJ file.
  * \return SUCCESS otherwise.
  */
 int dump_pe32(const char *filename, PE32 *pe32) {
@@ -265,6 +315,27 @@ int dump_pe32(const char *filename, PE32 *pe32) {
     printf("[+] Dumping COFF header\n");
     (*pe32)->offset_coff_header = (*pe32)->offset_pe_header + sizeof(uint32_t);
     get_coff_header32(filename, (*pe32)->coff_header);
+
+    if (!((*pe32)->coff_header->Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE)) {
+        fputs("Error: the file is not an executable file", stderr);
+        free((*pe32)->coff_header);
+        free((*pe32)->pe_header);
+        free((*pe32)->dos_header);
+        free((void *)(*pe32)->filename);
+        free(*pe32);
+        return NOT_EXECUTABLE;
+    }
+
+    if (!(*pe32)->coff_header->SizeOfOptionalHeader) {
+        fputs("Error: the file is an OBJ file", stderr);
+        free((*pe32)->coff_header);
+        free((*pe32)->pe_header);
+        free((*pe32)->dos_header);
+        free((void *)(*pe32)->filename);
+        free(*pe32);
+        return OBJ_FILE;
+    }
+
     printf("\tOffset 0x%X\n", (*pe32)->offset_coff_header);
     printf("\tSize %d\n", sizeof(IMAGE_FILE_HEADER));
 
@@ -284,7 +355,7 @@ int dump_pe32(const char *filename, PE32 *pe32) {
     printf("\tOffset 0x%X\n", (*pe32)->offset_optional_header);
     printf("\tSize %d\n", sizeof(IMAGE_OPTIONAL_HEADER32));
 
-    (*pe32)->offset_first_section_header = (*pe32)->offset_optional_header + (*pe32)->coff_header->SizeOfOptionalHeader;
+    (*pe32)->offset_first_section_header = (*pe32)->offset_optional_header + sizeof(IMAGE_OPTIONAL_HEADER32);
     (*pe32)->number_of_sections = (*pe32)->coff_header->NumberOfSections;
     (*pe32)->sections_headers = (PIMAGE_SECTION_HEADER *)calloc((*pe32)->number_of_sections, sizeof(PIMAGE_SECTION_HEADER));
     for (i = 0; i < (*pe32)->number_of_sections; i = i + 1)
