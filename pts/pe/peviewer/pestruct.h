@@ -22,7 +22,7 @@
 #define IMAGE_FILE_BYTES_REVERSED_HI    0x8000
 
 /* These are the settings of the Machine field. */
-#define IMAGE_FILE_MACHINE_UNKNOWN      0
+#define IMAGE_FILE_MACHINE_UNKNOWN      0x0
 #define IMAGE_FILE_MACHINE_I386         0x014c
 #define IMAGE_FILE_MACHINE_ARM          0x01c0
 #define IMAGE_FILE_MACHINE_AMD64        0x8664

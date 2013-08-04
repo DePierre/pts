@@ -20,6 +20,7 @@
  * \return DOS_HEADER_ERROR if it cannot dump the DOS header.
  * \return NOT_EXECUTABLE if the file is not an executable file.
  * \return OBJ_FILE if the file is an OBJ file.
+ * \return INVALID_PE_SIGNATURE if the OPTIONAL header signature is corrupted.
  * \return SUCCESS otherwise.
  */
 int get_pe_header64(const char *filename, PIMAGE_NT_HEADERS64 dest) {
@@ -59,6 +60,13 @@ int get_pe_header64(const char *filename, PIMAGE_NT_HEADERS64 dest) {
         free(dos_header);
         fclose(pe_file);
         return OBJ_FILE;
+    }
+
+    if (dest->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+        fputs("Error: Optional header signature is corrupted", stderr);
+        free(dos_header);
+        fclose(pe_file);
+        return INVALID_PE_SIGNATURE;
     }
 
     free(dos_header);
@@ -122,6 +130,7 @@ int get_coff_header64(const char *filename, PIMAGE_FILE_HEADER dest) {
  *
  * \return ALLOCATION_ERROR if allocations fail.
  * \return PE_HEADER_ERROR if it cannot dump the PE header.
+ * \return INVALID_PE_SIGNATURE if the OPTIONAL header signature is corrupted.
  * \return SUCCESS otherwise.
  */
 int get_optional_header64(const char *filename, PIMAGE_OPTIONAL_HEADER64 dest) {
@@ -138,6 +147,13 @@ int get_optional_header64(const char *filename, PIMAGE_OPTIONAL_HEADER64 dest) {
         free(pe_header);
         return PE_HEADER_ERROR;
     }
+
+    if (pe_header->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+        fputs("Error: Optional header signature is corrupted", stderr);
+        free(pe_header);
+        return INVALID_PE_SIGNATURE;
+    }
+
     /* IMAGE_NT_HEADERS64 contains the Optional header */
     memcpy(dest, &pe_header->OptionalHeader, sizeof(IMAGE_OPTIONAL_HEADER64));
 
@@ -254,6 +270,7 @@ int get_sections_headers64(const char *filename, PIMAGE_SECTION_HEADER *sections
  * \return ALLOCATION_ERROR if allocations fail.
  * \return NOT_EXECUTABLE if the file is not an executable file.
  * \return OBJ_FILE if the file is an OBJ file.
+ * \return INVALID_PE_SIGNATURE if the OPTIONAL header signature is corrupted.
  * \return SUCCESS otherwise.
  */
 int dump_pe64(const char *filename, PE64 *pe64) {
@@ -354,6 +371,17 @@ int dump_pe64(const char *filename, PE64 *pe64) {
     get_optional_header64(filename, (*pe64)->optional_header);
     printf("\tOffset 0x%X\n", (*pe64)->offset_optional_header);
     printf("\tSize %d\n", sizeof(IMAGE_OPTIONAL_HEADER64));
+
+    if ((*pe64)->optional_header->Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+        fputs("Error: Optional header signature is corrupted", stderr);
+        free((*pe64)->optional_header);
+        free((*pe64)->coff_header);
+        free((*pe64)->pe_header);
+        free((*pe64)->dos_header);
+        free((void *)(*pe64)->filename);
+        free(*pe64);
+        return INVALID_PE_SIGNATURE;
+    }
 
     (*pe64)->offset_first_section_header = (*pe64)->offset_optional_header + sizeof(IMAGE_OPTIONAL_HEADER64);
     (*pe64)->number_of_sections = (*pe64)->coff_header->NumberOfSections;
