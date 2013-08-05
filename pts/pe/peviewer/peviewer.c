@@ -3,52 +3,74 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <errors.h>
 #include <peviewer.h>
 
-/*! \arg \c filename name of the PE file
- * \returns 1 if the file is a correct PE one, 0 otherwise
+/**
+ * \fn int is_pe(const char *filename).
+ * \brief Test if filename is a valid PE file.
+ *
+ * \param filename The name of the PE file.
+ *
+ * \return ALLOCATION_ERROR if allocations fail.
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return INVALID_PE_SIGNATURE if the signature is not valid.
+ * \return SUCCESS if it is a valid PE file.
  */
 int is_pe(const char *filename)
 {
     FILE *pe_file = NULL;
     uint32_t signature= 0;
-    int res = 0;
+    int res = INVALID_PE_SIGNATURE;
     PIMAGE_DOS_HEADER dos_header = NULL;
 
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
     if (dos_header == NULL) {
         perror("Error: cannot allocate memory for dos header");
-        exit(1);
+        return ALLOCATION_ERROR;
     }
     /* Read the image dos header of the file */
     get_dos_header(filename, dos_header);
     if (dos_header == NULL) {
         fputs("Cannot read DOS header", stderr);
-        exit(1);
+        free(dos_header);
+        return ALLOCATION_ERROR;
     }
-    /* Check the magic number of the file */
-    if (dos_header->e_magic != IMAGE_DOS_SIGNATURE)
-        return 0;
 
-    pe_file = fopen(filename, "rb");
-    if (pe_file == NULL) {
-        perror("Error: cannot open the file");
-        exit(1);
+    /* Check the magic number of the file */
+    if (dos_header->e_magic == IMAGE_DOS_SIGNATURE) {
+        pe_file = fopen(filename, "rb");
+        if (pe_file == NULL) {
+            perror("Error: cannot open the file");
+            free(dos_header);
+            return FILE_ERROR;
+        }
+        fseek(pe_file, dos_header->e_lfanew, SEEK_SET);
+        fread((void *)&signature, sizeof(uint32_t), 1, pe_file);
+
+        /* Check the signature number of the file */
+        if (signature == IMAGE_NT_SIGNATURE)
+            res = SUCCESS;
+
+        fclose(pe_file);
     }
-    fseek(pe_file, dos_header->e_lfanew, SEEK_SET);
-    /* Check the signature number of the file */
-    fread((void *)&signature, sizeof(uint32_t), 1, pe_file);
-    res = (signature == IMAGE_NT_SIGNATURE) ? 1 : 0;
 
     free(dos_header);
-    fclose(pe_file);
     return res;
 }
 
-/*! \arg \c filename name of the PE file
- * \returns PECLASS32 (1) if it's a 32bits application
- * \returns PECLASS64 (2) if it's a 64bits application
- * \returns PECLASSNONE (0) otherwise
+/**
+ * \fn int get_arch_pe(const char *filename)
+ * \brief Retrieve the architecture of filename.
+ *
+ * \param filename The name of the valid PE file.
+ *
+ * \return ALLOCATION_ERROR if allocations fail.
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return DOS_HEADER_ERROR if it cannot dump the DOS header.
+ * \return PECLASS32 if it is a 32bits application.
+ * \return PECLASS64 if it is a 64bits application.
+ * \return PECLASSNONE otherwise.
  */
 int get_arch_pe(const char *filename)
 {
@@ -60,17 +82,19 @@ int get_arch_pe(const char *filename)
     dos_header = (PIMAGE_DOS_HEADER)calloc(1, sizeof(IMAGE_DOS_HEADER));
     if (dos_header == NULL) {
         perror("Error: cannot allocate memory for dos header");
-        exit(1);
+        return ALLOCATION_ERROR;
     }
     get_dos_header(filename, dos_header);
     if (dos_header == NULL) {
         fputs("Cannot read DOS header", stderr);
-        exit(1);
+        free(dos_header);
+        return DOS_HEADER_ERROR;
     }
     pe_file = fopen(filename, "rb");
     if (pe_file == NULL) {
         perror("Error: cannot open the file");
-        exit(1);
+        free(dos_header);
+        return FILE_ERROR;
     }
     /* Move the cursor to the field Magic of the Optional header */
     fseek(pe_file, dos_header->e_lfanew + sizeof(uint32_t) + sizeof(IMAGE_FILE_HEADER), SEEK_SET);
@@ -86,74 +110,40 @@ int get_arch_pe(const char *filename)
     return res;
 }
 
-/*! \arg \c filename name of the PE file
- *  \arg \c dest destination to write the dos header
+/**
+ * \fn int get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
+ * \brief Dump the DOS header from filename.
+ *
+ * \param filename The name of a valid PE file.
+ * \param dest A pointer where to save the DOS header.
+ *
+ * \return FILE_ERROR if it cannot handle the file.
+ * \return SUCCESS otherwise.
  */
-void get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
+int get_dos_header(const char *filename, PIMAGE_DOS_HEADER dest)
 {
     FILE *pe_file = NULL;
 
     pe_file = fopen(filename, "rb");
     if (pe_file == NULL) {
         perror("Error: cannot open the file");
-        exit(1);
+        return FILE_ERROR;
     }
     /* Read the image dos header of the file */
     fread((void *)dest, sizeof(IMAGE_DOS_HEADER), 1, pe_file);
 
     fclose(pe_file);
+    return SUCCESS;
 }
 
-/*! \arg \c filename name of the PE file
- *  \arg \c offset offset of the first section header
- *  \arg \c name name of the section the user wants
- *  \arg \c nb_sections the number of the sections in the file
- *  \arg \c dest destination to write the section
- * \returns 0 if failed
- * \returns 1 if succeed
- */
-int cmp_section_by_name(const char *filename, uint32_t offset, const char *name, uint16_t nb_sections, PIMAGE_SECTION_HEADER dest)
-{
-    FILE *pe_file = NULL;
-    PIMAGE_SECTION_HEADER section_header = NULL;
-    int res = 0;
-    uint16_t i = 0;
-
-    section_header = (PIMAGE_SECTION_HEADER)calloc(1, sizeof(IMAGE_SECTION_HEADER));
-    if (section_header == NULL) {
-        perror("Error: cannot allocate memory for section header");
-        exit(1);
-    }
-
-    pe_file = fopen(filename, "rb");
-    if (pe_file == NULL) {
-        perror("Error: cannot open the file");
-        exit(1);
-    }
-    fseek(pe_file, offset, SEEK_CUR);
-    /* We read the first section */
-    fread((void *)section_header, sizeof(IMAGE_SECTION_HEADER), 1, pe_file);
-
-    /* We read every section name to find the one */
-    while (strcmp(name, (char *)section_header->Name) && i < nb_sections) {
-        fread((void *)section_header, sizeof(IMAGE_SECTION_HEADER), 1, pe_file);
-        i = i + 1;
-    }
-
-    /* If the last section we have read is the one, we copy it into the dest */
-    if (!strcmp(name, (char *)section_header->Name)) {
-        memcpy(dest, section_header, sizeof(IMAGE_SECTION_HEADER));
-        res = 1;
-    }
-
-    free(section_header);
-    fclose(pe_file);
-    return res;
-}
-
-/*! \arg \c value the value to be aligned
- * \arg \c alignment the alignment
- * \returns value aligned
+/**
+ * \fn uint32_t get_alignment(uint32_t value, uint32_t alignment)
+ * \brief Compute the aligned value of value according to alignment.
+ *
+ * \param value The value to be aligned.
+ * \param alignment The alignment value.
+ *
+ * \return The aligned value of value according to alignment.
  */
 uint32_t get_alignment(uint32_t value, uint32_t alignment)
 {
@@ -161,50 +151,4 @@ uint32_t get_alignment(uint32_t value, uint32_t alignment)
         return value;
     else
         return ((value / alignment) + 1) * alignment;
-}
-
-/*! \arg \c src the section where to compute the free space
- * \arg \c virtual_offset offset of the virtual address where free space starts
- * \returns free_space free space available
- */
-uint32_t get_free_space_section(PIMAGE_SECTION_HEADER src, uint32_t *virtual_offset)
-{
-    int32_t free_space = 0;
-    if (src == NULL) {
-        virtual_offset = NULL;
-        return 0;
-    }
-
-    /* Compute the free space available */
-    free_space = (int32_t)(src->Misc.VirtualSize - src->SizeOfRawData);
-    if (free_space <= 0) {
-        virtual_offset = NULL;
-        return 0;
-    }
-    /* Compute the offset where the free space starts */
-    *virtual_offset = (uint32_t)(src->VirtualAddress + src->SizeOfRawData);
-    return free_space;
-}
-
-/*! \arg \c src the section where to compute the free space
- * \arg \c raw_offset offset of the raw address where free space starts
- * \returns free_space free space available
- */
-uint32_t get_raw_free_space_section(PIMAGE_SECTION_HEADER src, uint32_t *raw_offset)
-{
-    int32_t free_space = 0;
-    if (src == NULL) {
-        raw_offset = NULL;
-        return 0;
-    }
-
-    /* Compute the free space available */
-    free_space = (int32_t)(src->Misc.VirtualSize - src->SizeOfRawData);
-    if (free_space <= 0) {
-        raw_offset = NULL;
-        return 0;
-    }
-    /* Compute the offset where the free space starts */
-    *raw_offset = (uint32_t)(src->Misc.PhysicalAddress + src->SizeOfRawData);
-    return free_space;
 }

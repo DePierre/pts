@@ -3,12 +3,12 @@ export CCFLAGS = -W -Wall -ansi -pedantic -Werror -m32 -g
 
 TARGET = pts.out
 
+UTILS = ./utils/
 LOADER_DIR = ./loader/
 PEVIEWER_DIR = ./pe/peviewer/
 PEPACKER_DIR = ./pe/pepacker/
-PEPACKER_LIB = PEPacker
 
-DIR = -I. -I$(LOADER_DIR) -I$(PEVIEWER_DIR) -I$(PEPACKER_DIR)
+DIR = -I. -I$(LOADER_DIR) -I$(PEVIEWER_DIR) -I$(PEPACKER_DIR) -I$(UTILS)
 
 SRC = $(wildcard *.c) $(wildcard $(LOADER_DIR)*.c) $(wildcard $(PEVIEWER_DIR)*.c) $(wildcard $(PEPACKER_DIR)*.c)
 OBJ = $(SRC:.c=.o)
